@@ -2,20 +2,17 @@ package com.enterprise.workflow.engine;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * Workflow Engine Application
  * 
- * BPMN 2.0 process execution engine based on Activiti7 Cloud.
+ * BPMN 2.0 process execution engine based on Activiti7.
  * Provides process deployment, instance management, and signal handling.
  */
 @SpringBootApplication(scanBasePackages = {
         "com.enterprise.workflow.engine",
         "com.enterprise.workflow.common"
-}, exclude = {
-        OAuth2ResourceServerAutoConfiguration.class
 })
 @EnableAsync
 public class WorkflowEngineApplication {
