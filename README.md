@@ -135,12 +135,16 @@ npm run dev
 | **Decision Engine** | `/api/v1` | [Swagger UI](http://localhost:8083/swagger-ui.html) | 8083 |
 
 ### Infrastructure
-| Service | URL | Credentials (Dev) |
-|---------|-----|-------------------|
-| **Keycloak** | http://localhost:8180 | admin / admin123 |
-| **RabbitMQ** | http://localhost:15672 | workflow / workflow123 |
-| **MinIO** | http://localhost:9001 | workflow / workflow123 |
-| **Grafana** | http://localhost:3030 | admin / admin123 |
+| Service | URL | Credentials (Dev) | Description |
+|---------|-----|-------------------|-------------|
+| **Keycloak** | http://localhost:8180 | admin / admin123 | IAM & SSO |
+| **RabbitMQ** | http://localhost:15672 | workflow / workflow123 | Message Broker UI |
+| **MinIO** | http://localhost:9001 | workflow / workflow123 | S3 Object Storage |
+| **Grafana** | http://localhost:3030 | admin / admin123 | Monitoring Dashboards |
+| **Prometheus** | http://localhost:9090 | N/A | Metrics Scraper |
+| **OpenSearch Dashboards** | http://localhost:5601 | N/A | Log Visualization |
+| **Redis** | localhost:6379 | N/A | Cache (No UI) |
+| **PostgreSQL** | localhost:5432 | workflow / workflow123 | Database (No UI) |
 
 ## 🐳 Container Build
 

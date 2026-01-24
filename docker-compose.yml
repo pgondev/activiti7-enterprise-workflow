@@ -81,6 +81,7 @@ services:
       - discovery.type=single-node
       - plugins.security.disabled=true
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=StrongAdmin123!"
     ports:
       - "9200:9200"
       - "9600:9600"
@@ -211,7 +212,7 @@ services:
     image: grafana/grafana:10.3.1
     container_name: workflow-grafana
     ports:
-      - "3000:3000"
+      - "3030:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin123
