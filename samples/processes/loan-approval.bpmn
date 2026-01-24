@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:activiti="http://activiti.org/bpmn"
+                  id="Definitions_LoanApproval" 
+                  targetNamespace="http://enterprise.workflow/loan">
+  
+  <bpmn:process id="loan-approval" name="Loan Approval Process" isExecutable="true">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="start" name="Loan Application Received">
+      <bpmn:outgoing>flow1</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Review Application Task -->
+    <bpmn:userTask id="reviewApplication" name="Review Loan Application" 
+                   activiti:candidateGroups="loan-officers">
+      <bpmn:incoming>flow1</bpmn:incoming>
+      <bpmn:outgoing>flow2</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Credit Check Gateway -->
+    <bpmn:exclusiveGateway id="creditCheckGateway" name="Credit Score Check">
+      <bpmn:incoming>flow2</bpmn:incoming>
+      <bpmn:outgoing>flowHighCredit</bpmn:outgoing>
+      <bpmn:outgoing>flowLowCredit</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- High Credit Score Path - Auto Approve -->
+    <bpmn:serviceTask id="autoApprove" name="Auto Approve Loan"
+                      activiti:delegateExpression="${loanApprovalService}">
+      <bpmn:incoming>flowHighCredit</bpmn:incoming>
+      <bpmn:outgoing>flowApproved</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Low Credit Score Path - Manager Review -->
+    <bpmn:userTask id="managerReview" name="Manager Review Required"
+                   activiti:candidateGroups="managers">
+      <bpmn:incoming>flowLowCredit</bpmn:incoming>
+      <bpmn:outgoing>flow3</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Manager Decision Gateway -->
+    <bpmn:exclusiveGateway id="managerDecision" name="Manager Decision">
+      <bpmn:incoming>flow3</bpmn:incoming>
+      <bpmn:outgoing>flowManagerApprove</bpmn:outgoing>
+      <bpmn:outgoing>flowManagerReject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Send Approval Notification -->
+    <bpmn:serviceTask id="sendApprovalNotification" name="Send Approval Notification"
+                      activiti:delegateExpression="${notificationService}">
+      <bpmn:incoming>flowApproved</bpmn:incoming>
+      <bpmn:incoming>flowManagerApprove</bpmn:incoming>
+      <bpmn:outgoing>flowToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Send Rejection Notification -->
+    <bpmn:serviceTask id="sendRejectionNotification" name="Send Rejection Notification"
+                      activiti:delegateExpression="${notificationService}">
+      <bpmn:incoming>flowManagerReject</bpmn:incoming>
+      <bpmn:outgoing>flowToEndRejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- End Events -->
+    <bpmn:endEvent id="endApproved" name="Loan Approved">
+      <bpmn:incoming>flowToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="endRejected" name="Loan Rejected">
+      <bpmn:incoming>flowToEndRejected</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="reviewApplication" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="reviewApplication" targetRef="creditCheckGateway" />
+    <bpmn:sequenceFlow id="flowHighCredit" name="Score >= 700" sourceRef="creditCheckGateway" targetRef="autoApprove">
+      <bpmn:conditionExpression>${creditScore >= 700}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowLowCredit" name="Score &lt; 700" sourceRef="creditCheckGateway" targetRef="managerReview">
+      <bpmn:conditionExpression>${creditScore &lt; 700}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowApproved" sourceRef="autoApprove" targetRef="sendApprovalNotification" />
+    <bpmn:sequenceFlow id="flow3" sourceRef="managerReview" targetRef="managerDecision" />
+    <bpmn:sequenceFlow id="flowManagerApprove" name="Approved" sourceRef="managerDecision" targetRef="sendApprovalNotification">
+      <bpmn:conditionExpression>${approved == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowManagerReject" name="Rejected" sourceRef="managerDecision" targetRef="sendRejectionNotification">
+      <bpmn:conditionExpression>${approved == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToEnd" sourceRef="sendApprovalNotification" targetRef="endApproved" />
+    <bpmn:sequenceFlow id="flowToEndRejected" sourceRef="sendRejectionNotification" targetRef="endRejected" />
+    
+  </bpmn:process>
+  
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan-approval">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="180" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reviewApplication_di" bpmnElement="reviewApplication">
+        <dc:Bounds x="270" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="creditCheckGateway_di" bpmnElement="creditCheckGateway" isMarkerVisible="true">
+        <dc:Bounds x="425" y="193" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="autoApprove_di" bpmnElement="autoApprove">
+        <dc:Bounds x="530" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="managerReview_di" bpmnElement="managerReview">
+        <dc:Bounds x="530" y="270" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="managerDecision_di" bpmnElement="managerDecision" isMarkerVisible="true">
+        <dc:Bounds x="685" y="285" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sendApprovalNotification_di" bpmnElement="sendApprovalNotification">
+        <dc:Bounds x="790" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sendRejectionNotification_di" bpmnElement="sendRejectionNotification">
+        <dc:Bounds x="790" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endApproved_di" bpmnElement="endApproved">
+        <dc:Bounds x="952" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endRejected_di" bpmnElement="endRejected">
+        <dc:Bounds x="952" y="392" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  
+</bpmn:definitions>

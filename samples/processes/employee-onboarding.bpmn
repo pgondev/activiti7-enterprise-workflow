@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:activiti="http://activiti.org/bpmn"
+                  id="Definitions_EmployeeOnboarding" 
+                  targetNamespace="http://enterprise.workflow/hr">
+  
+  <bpmn:process id="employee-onboarding" name="Employee Onboarding" isExecutable="true">
+    
+    <bpmn:startEvent id="start" name="New Employee Hired">
+      <bpmn:outgoing>flow1</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Parallel Gateway - Start multiple tasks at once -->
+    <bpmn:parallelGateway id="parallelStart" name="Start Parallel Tasks">
+      <bpmn:incoming>flow1</bpmn:incoming>
+      <bpmn:outgoing>flowIT</bpmn:outgoing>
+      <bpmn:outgoing>flowHR</bpmn:outgoing>
+      <bpmn:outgoing>flowFacilities</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    
+    <!-- IT Setup -->
+    <bpmn:userTask id="setupIT" name="Setup IT Equipment"
+                   activiti:candidateGroups="it-support">
+      <bpmn:incoming>flowIT</bpmn:incoming>
+      <bpmn:outgoing>flowITDone</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- HR Paperwork -->
+    <bpmn:userTask id="hrPaperwork" name="Complete HR Paperwork"
+                   activiti:candidateGroups="hr">
+      <bpmn:incoming>flowHR</bpmn:incoming>
+      <bpmn:outgoing>flowHRDone</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Facilities - Workspace Setup -->
+    <bpmn:userTask id="setupWorkspace" name="Prepare Workspace"
+                   activiti:candidateGroups="facilities">
+      <bpmn:incoming>flowFacilities</bpmn:incoming>
+      <bpmn:outgoing>flowFacilitiesDone</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Wait for all parallel tasks -->
+    <bpmn:parallelGateway id="parallelEnd" name="All Tasks Complete">
+      <bpmn:incoming>flowITDone</bpmn:incoming>
+      <bpmn:incoming>flowHRDone</bpmn:incoming>
+      <bpmn:incoming>flowFacilitiesDone</bpmn:incoming>
+      <bpmn:outgoing>flow2</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    
+    <!-- Send Welcome Email -->
+    <bpmn:serviceTask id="sendWelcomeEmail" name="Send Welcome Email"
+                      activiti:delegateExpression="${emailService}">
+      <bpmn:incoming>flow2</bpmn:incoming>
+      <bpmn:outgoing>flow3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Schedule Orientation -->
+    <bpmn:userTask id="scheduleOrientation" name="Schedule Orientation"
+                   activiti:assignee="${hiringManager}">
+      <bpmn:incoming>flow3</bpmn:incoming>
+      <bpmn:outgoing>flow4</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <bpmn:endEvent id="end" name="Onboarding Complete">
+      <bpmn:incoming>flow4</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="parallelStart" />
+    <bpmn:sequenceFlow id="flowIT" sourceRef="parallelStart" targetRef="setupIT" />
+    <bpmn:sequenceFlow id="flowHR" sourceRef="parallelStart" targetRef="hrPaperwork" />
+    <bpmn:sequenceFlow id="flowFacilities" sourceRef="parallelStart" targetRef="setupWorkspace" />
+    <bpmn:sequenceFlow id="flowITDone" sourceRef="setupIT" targetRef="parallelEnd" />
+    <bpmn:sequenceFlow id="flowHRDone" sourceRef="hrPaperwork" targetRef="parallelEnd" />
+    <bpmn:sequenceFlow id="flowFacilitiesDone" sourceRef="setupWorkspace" targetRef="parallelEnd" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="parallelEnd" targetRef="sendWelcomeEmail" />
+    <bpmn:sequenceFlow id="flow3" sourceRef="sendWelcomeEmail" targetRef="scheduleOrientation" />
+    <bpmn:sequenceFlow id="flow4" sourceRef="scheduleOrientation" targetRef="end" />
+    
+  </bpmn:process>
+  
+</bpmn:definitions>

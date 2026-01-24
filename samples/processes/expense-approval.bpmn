@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:activiti="http://activiti.org/bpmn"
+                  id="Definitions_ExpenseApproval" 
+                  targetNamespace="http://enterprise.workflow/finance">
+  
+  <bpmn:process id="expense-approval" name="Expense Approval" isExecutable="true">
+    
+    <bpmn:startEvent id="start" name="Expense Submitted">
+      <bpmn:outgoing>flow1</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Check Amount Gateway -->
+    <bpmn:exclusiveGateway id="amountCheck" name="Check Amount">
+      <bpmn:incoming>flow1</bpmn:incoming>
+      <bpmn:outgoing>flowSmall</bpmn:outgoing>
+      <bpmn:outgoing>flowMedium</bpmn:outgoing>
+      <bpmn:outgoing>flowLarge</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Small Amount - Auto Approve -->
+    <bpmn:serviceTask id="autoApproveSmall" name="Auto Approve (< $100)"
+                      activiti:delegateExpression="${expenseService}">
+      <bpmn:incoming>flowSmall</bpmn:incoming>
+      <bpmn:outgoing>flowSmallDone</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Medium Amount - Manager Approval -->
+    <bpmn:userTask id="managerApproval" name="Manager Approval"
+                   activiti:assignee="${manager}">
+      <bpmn:incoming>flowMedium</bpmn:incoming>
+      <bpmn:outgoing>flowMediumDone</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Large Amount - Director Approval -->
+    <bpmn:userTask id="directorApproval" name="Director Approval"
+                   activiti:candidateGroups="directors">
+      <bpmn:incoming>flowLarge</bpmn:incoming>
+      <bpmn:outgoing>flowLargeDone</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Merge Gateway -->
+    <bpmn:exclusiveGateway id="merge" name="Merge Paths">
+      <bpmn:incoming>flowSmallDone</bpmn:incoming>
+      <bpmn:incoming>flowMediumDone</bpmn:incoming>
+      <bpmn:incoming>flowLargeDone</bpmn:incoming>
+      <bpmn:outgoing>flow2</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Process Reimbursement -->
+    <bpmn:serviceTask id="processReimbursement" name="Process Reimbursement"
+                      activiti:delegateExpression="${reimbursementService}">
+      <bpmn:incoming>flow2</bpmn:incoming>
+      <bpmn:outgoing>flow3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:endEvent id="end" name="Expense Processed">
+      <bpmn:incoming>flow3</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="amountCheck" />
+    <bpmn:sequenceFlow id="flowSmall" name="Amount &lt; $100" sourceRef="amountCheck" targetRef="autoApproveSmall">
+      <bpmn:conditionExpression>${amount &lt; 100}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowMedium" name="$100 - $1000" sourceRef="amountCheck" targetRef="managerApproval">
+      <bpmn:conditionExpression>${amount >= 100 &amp;&amp; amount &lt; 1000}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowLarge" name="Amount >= $1000" sourceRef="amountCheck" targetRef="directorApproval">
+      <bpmn:conditionExpression>${amount >= 1000}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowSmallDone" sourceRef="autoApproveSmall" targetRef="merge" />
+    <bpmn:sequenceFlow id="flowMediumDone" sourceRef="managerApproval" targetRef="merge" />
+    <bpmn:sequenceFlow id="flowLargeDone" sourceRef="directorApproval" targetRef="merge" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="merge" targetRef="processReimbursement" />
+    <bpmn:sequenceFlow id="flow3" sourceRef="processReimbursement" targetRef="end" />
+    
+  </bpmn:process>
+  
+</bpmn:definitions>
