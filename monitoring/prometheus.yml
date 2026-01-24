@@ -1,0 +1,78 @@
+# Prometheus configuration for workflow platform monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Workflow Engine
+  - job_name: "workflow-engine"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8080"]
+    scrape_interval: 10s
+
+  # Task Service
+  - job_name: "task-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8083"]
+    scrape_interval: 10s
+
+  # Form Service
+  - job_name: "form-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8084"]
+    scrape_interval: 10s
+
+  # Decision Engine
+  - job_name: "decision-engine"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8085"]
+    scrape_interval: 10s
+
+  # Case Engine
+  - job_name: "case-engine"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8086"]
+    scrape_interval: 10s
+
+  # Reporting Service
+  - job_name: "reporting-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8091"]
+    scrape_interval: 10s
+
+  # PostgreSQL (via postgres_exporter if deployed)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  # RabbitMQ
+  - job_name: "rabbitmq"
+    static_configs:
+      - targets: ["rabbitmq:15692"]
+    metrics_path: "/metrics"
+
+  # Redis
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # OpenSearch
+  # - job_name: 'opensearch'
+  #   static_configs:
+  #     - targets: ['opensearch:9200']
+  #   metrics_path: '/_prometheus/metrics'

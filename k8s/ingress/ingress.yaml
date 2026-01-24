@@ -1,0 +1,83 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: workflow-ingress
+  namespace: workflow
+  labels:
+    app.kubernetes.io/name: workflow-ingress
+    app.kubernetes.io/part-of: activiti7-enterprise-workflow
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - workflow.example.com
+        - api.workflow.example.com
+        - modeler.workflow.example.com
+        - tasklist.workflow.example.com
+        - admin.workflow.example.com
+      secretName: workflow-tls
+  rules:
+    # API Gateway - All backend API calls
+    - host: api.workflow.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway-service
+                port:
+                  number: 8080
+
+    # Process Modeler/Designer
+    - host: modeler.workflow.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: modeler-ui
+                port:
+                  number: 80
+
+    # Tasklist Application
+    - host: tasklist.workflow.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tasklist-ui
+                port:
+                  number: 80
+
+    # Admin Console
+    - host: admin.workflow.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-ui
+                port:
+                  number: 80
+
+    # Main workflow domain - redirect to tasklist
+    - host: workflow.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tasklist-ui
+                port:
+                  number: 80

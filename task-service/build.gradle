@@ -1,0 +1,35 @@
+description = 'Comprehensive task management service with Camunda/Flowable feature parity'
+
+dependencies {
+    // Common Module
+    implementation project(':common')
+    
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    
+    // Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    
+    // Activiti7
+    implementation 'org.activiti:activiti-spring-boot-starter'
+    
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation "org.flywaydb:flyway-core:${flywayVersion}"
+    
+    // Messaging
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
+    
+    // Redis Cache
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    
+    // API Documentation
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+    
+    // Testing
+    testImplementation 'org.testcontainers:postgresql'
+}

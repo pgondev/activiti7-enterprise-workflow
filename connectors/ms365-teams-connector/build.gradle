@@ -1,0 +1,12 @@
+description = 'Microsoft 365 Teams Connector - Send messages, cards, and manage channels'
+
+dependencies {
+    implementation project(':libs:common')
+    
+    // Microsoft Graph SDK
+    implementation 'com.microsoft.graph:microsoft-graph:5.77.0'
+    implementation 'com.azure:azure-identity:1.11.2'
+    
+    // HTTP Client
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+}

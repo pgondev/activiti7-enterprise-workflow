@@ -1,0 +1,21 @@
+description = 'Comprehensive User Task Management Service'
+
+dependencies {
+    implementation project(':libs:messaging-common')
+    
+    // Activiti7
+    implementation 'org.activiti:activiti-spring-boot-starter'
+    
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    
+    // Redis Cache
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    
+    // Messaging
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
+    
+    // Testing
+    testImplementation 'org.testcontainers:postgresql'
+}

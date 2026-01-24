@@ -1,0 +1,32 @@
+description = 'BPMN 2.0 process execution engine based on Activiti7'
+
+dependencies {
+    // Common Module
+    implementation project(':common')
+    
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    
+    // Activiti7 Cloud
+    implementation 'org.activiti.cloud:activiti-cloud-starter-runtime-bundle'
+    
+    // Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation "org.flywaydb:flyway-core:${flywayVersion}"
+    
+    // Messaging
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
+    
+    // API Documentation
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+    
+    // Testing
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:rabbitmq'
+}

@@ -1,0 +1,244 @@
+version: "3.8"
+
+# ============================================
+# LOCAL DEVELOPMENT ENVIRONMENT
+# All Open Source - No paid software required
+# ============================================
+
+services:
+  # ==========================================
+  # DATABASE
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: workflow-postgres
+    environment:
+      POSTGRES_USER: workflow
+      POSTGRES_PASSWORD: workflow123
+      POSTGRES_DB: workflowdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - workflow-network
+
+  # ==========================================
+  # MESSAGE BROKER
+  # ==========================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: workflow-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: workflow
+      RABBITMQ_DEFAULT_PASS: workflow123
+    ports:
+      - "5672:5672" # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - workflow-network
+
+  # ==========================================
+  # CACHE
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: workflow-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - workflow-network
+
+  # ==========================================
+  # SEARCH & LOGGING (OpenSearch - OSS)
+  # Alternative to Elasticsearch/Splunk
+  # ==========================================
+  opensearch:
+    image: opensearchproject/opensearch:2.12.0
+    container_name: workflow-opensearch
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:9200/_cluster/health | grep -q 'green\\|yellow'",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - workflow-network
+
+  # OpenSearch Dashboards (Kibana alternative)
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.12.0
+    container_name: workflow-opensearch-dashboards
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    ports:
+      - "5601:5601"
+    depends_on:
+      - opensearch
+    networks:
+      - workflow-network
+
+  # ==========================================
+  # IDENTITY PROVIDER (Keycloak - OSS)
+  # ==========================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.4
+    container_name: workflow-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/workflowdb
+      KC_DB_USERNAME: workflow
+      KC_DB_PASSWORD: workflow123
+      KC_HEALTH_ENABLED: true
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\nHost: localhost\\n\\n' >&3 && cat <&3 | grep -q '200'",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - workflow-network
+
+  # ==========================================
+  # OBJECT STORAGE (MinIO - OSS)
+  # ==========================================
+  minio:
+    image: minio/minio:latest
+    container_name: workflow-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: workflow
+      MINIO_ROOT_PASSWORD: workflow123
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - workflow-network
+
+  # MinIO bucket initialization
+  minio-init:
+    image: minio/mc:latest
+    container_name: workflow-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set local http://minio:9000 workflow workflow123;
+      mc mb local/process-attachments --ignore-existing;
+      mc mb local/task-attachments --ignore-existing;
+      mc mb local/documents --ignore-existing;
+      mc mb local/forms --ignore-existing;
+      echo 'Buckets created successfully';
+      exit 0;
+      "
+    networks:
+      - workflow-network
+
+  # ==========================================
+  # MONITORING (Prometheus + Grafana - OSS)
+  # ==========================================
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: workflow-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    networks:
+      - workflow-network
+
+  grafana:
+    image: grafana/grafana:10.3.1
+    container_name: workflow-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - workflow-network
+
+# ==========================================
+# VOLUMES
+# ==========================================
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
+  opensearch_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+
+# ==========================================
+# NETWORKS
+# ==========================================
+networks:
+  workflow-network:
+    driver: bridge

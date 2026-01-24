@@ -1,0 +1,18 @@
+description = 'BPMN 2.0 Process Execution Engine - Core workflow runtime based on Activiti7'
+
+dependencies {
+    implementation project(':libs:messaging-common')
+    
+    // Activiti7 Cloud Runtime Bundle
+    implementation 'org.activiti.cloud:activiti-cloud-starter-runtime-bundle'
+    
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    
+    // Messaging
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
+    
+    // Testing
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:rabbitmq'
+}

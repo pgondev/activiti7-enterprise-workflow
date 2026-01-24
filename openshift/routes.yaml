@@ -1,0 +1,156 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: workflow-engine-route
+  namespace: workflow
+  labels:
+    app: workflow-engine
+spec:
+  host: api.workflow.apps.example.com
+  path: /engine
+  to:
+    kind: Service
+    name: workflow-engine
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: task-service-route
+  namespace: workflow
+  labels:
+    app: task-service
+spec:
+  host: api.workflow.apps.example.com
+  path: /tasks
+  to:
+    kind: Service
+    name: task-service
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: form-service-route
+  namespace: workflow
+  labels:
+    app: form-service
+spec:
+  host: api.workflow.apps.example.com
+  path: /forms
+  to:
+    kind: Service
+    name: form-service
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: decision-engine-route
+  namespace: workflow
+  labels:
+    app: decision-engine
+spec:
+  host: api.workflow.apps.example.com
+  path: /decisions
+  to:
+    kind: Service
+    name: decision-engine
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: case-engine-route
+  namespace: workflow
+  labels:
+    app: case-engine
+spec:
+  host: api.workflow.apps.example.com
+  path: /cases
+  to:
+    kind: Service
+    name: case-engine
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: modeler-ui-route
+  namespace: workflow
+  labels:
+    app: modeler-ui
+spec:
+  host: modeler.workflow.apps.example.com
+  to:
+    kind: Service
+    name: modeler-ui
+    weight: 100
+  port:
+    targetPort: 80
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: tasklist-ui-route
+  namespace: workflow
+  labels:
+    app: tasklist-ui
+spec:
+  host: tasklist.workflow.apps.example.com
+  to:
+    kind: Service
+    name: tasklist-ui
+    weight: 100
+  port:
+    targetPort: 80
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: admin-ui-route
+  namespace: workflow
+  labels:
+    app: admin-ui
+spec:
+  host: admin.workflow.apps.example.com
+  to:
+    kind: Service
+    name: admin-ui
+    weight: 100
+  port:
+    targetPort: 80
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

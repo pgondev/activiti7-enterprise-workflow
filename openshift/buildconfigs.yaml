@@ -1,0 +1,127 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: workflow-engine-build
+  namespace: workflow
+  labels:
+    app: workflow-engine
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/YOUR_ORG/activiti7-enterprise-workflow.git
+      ref: main
+    contextDir: services/workflow-engine
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: workflow-engine:latest
+  triggers:
+    - type: ConfigChange
+    - type: GitHub
+      github:
+        secret: workflow-github-secret
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: task-service-build
+  namespace: workflow
+  labels:
+    app: task-service
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/YOUR_ORG/activiti7-enterprise-workflow.git
+      ref: main
+    contextDir: services/task-service
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: task-service:latest
+  triggers:
+    - type: ConfigChange
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: modeler-ui-build
+  namespace: workflow
+  labels:
+    app: modeler-ui
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/YOUR_ORG/activiti7-enterprise-workflow.git
+      ref: main
+    contextDir: apps/modeler-ui
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: modeler-ui:latest
+  triggers:
+    - type: ConfigChange
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: tasklist-ui-build
+  namespace: workflow
+  labels:
+    app: tasklist-ui
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/YOUR_ORG/activiti7-enterprise-workflow.git
+      ref: main
+    contextDir: apps/tasklist-ui
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: tasklist-ui:latest
+  triggers:
+    - type: ConfigChange
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: admin-ui-build
+  namespace: workflow
+  labels:
+    app: admin-ui
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/YOUR_ORG/activiti7-enterprise-workflow.git
+      ref: main
+    contextDir: apps/admin-ui
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: admin-ui:latest
+  triggers:
+    - type: ConfigChange

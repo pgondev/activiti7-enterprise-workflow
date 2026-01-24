@@ -1,0 +1,217 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.2' apply false
+    id 'io.spring.dependency-management' version '1.1.4' apply false
+    id 'com.google.cloud.tools.jib' version '3.4.0' apply false
+    id 'com.github.node-gradle.node' version '7.0.1' apply false
+}
+
+allprojects {
+    group = 'com.enterprise.workflow'
+    version = '1.0.0-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+        maven { url 'https://artifacts.alfresco.com/nexus/content/repositories/activiti-releases' }
+    }
+}
+
+// ============================================
+// SHARED LIBRARY MODULES (libs/*)
+// ============================================
+configure(subprojects.findAll { it.path.startsWith(':libs:') }) {
+    apply plugin: 'java-library'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    // Libraries don't need bootJar
+    tasks.named('bootJar') { enabled = false }
+    tasks.named('jar') { enabled = true }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    ext {
+        set('flywayVersion', '10.6.0')
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+        }
+        dependencies {
+            dependency "org.flywaydb:flyway-core:${flywayVersion}"
+            dependency "org.flywaydb:flyway-database-postgresql:${flywayVersion}"
+        }
+    }
+
+    dependencies {
+        compileOnly 'org.projectlombok:lombok:1.18.30'
+        annotationProcessor 'org.projectlombok:lombok:1.18.30'
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    }
+}
+
+// ============================================
+// BACKEND SERVICE MODULES (services/*)
+// ============================================
+configure(subprojects.findAll { it.path.startsWith(':services:') }) {
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.google.cloud.tools.jib'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    ext {
+        set('springCloudVersion', '2023.0.0')
+        set('activitiCloudVersion', '8.0.0')
+        set('testcontainersVersion', '1.19.4')
+        set('springdocVersion', '2.3.0')
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+            mavenBom "org.activiti.cloud:activiti-cloud-dependencies:${activitiCloudVersion}"
+            mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
+        }
+    }
+
+    dependencies {
+        implementation project(':libs:common')
+        implementation project(':libs:security-common')
+        
+        compileOnly 'org.projectlombok:lombok:1.18.30'
+        annotationProcessor 'org.projectlombok:lombok:1.18.30'
+        
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+
+    // JIB Container Configuration for OpenShift/Kubernetes
+    jib {
+        from {
+            image = 'registry.access.redhat.com/ubi9/openjdk-17-runtime:latest'
+        }
+        to {
+            image = "${containerRegistry}/${containerNamespace}/${project.name}"
+            tags = ['latest', project.version.toString()]
+        }
+        container {
+            jvmFlags = [
+                '-Xms256m', 
+                '-Xmx512m', 
+                '-XX:+UseG1GC',
+                '-XX:+UseContainerSupport',
+                '-XX:MaxRAMPercentage=75.0'
+            ]
+            ports = ['8080']
+            environment = [
+                'SPRING_PROFILES_ACTIVE': 'openshift',
+                'TZ': 'UTC'
+            ]
+            labels = [
+                'io.openshift.tags': 'workflow,java,springboot',
+                'io.k8s.description': project.description ?: project.name,
+                'io.openshift.expose-services': '8080:http',
+                'app.kubernetes.io/name': project.name,
+                'app.kubernetes.io/version': project.version.toString(),
+                'app.kubernetes.io/component': 'backend'
+            ]
+            user = '1001'
+            creationTime = 'USE_CURRENT_TIMESTAMP'
+        }
+    }
+}
+
+// ============================================
+// FRONTEND APP MODULES (apps/*)
+// ============================================
+configure(subprojects.findAll { it.path.startsWith(':apps:') }) {
+    apply plugin: 'com.github.node-gradle.node'
+    apply plugin: 'base'
+
+    node {
+        version = '20.11.0'
+        npmVersion = '10.4.0'
+        download = true
+    }
+
+    tasks.register('buildFrontend') {
+        dependsOn 'npmInstall'
+        doLast {
+            exec {
+                commandLine 'npm', 'run', 'build'
+            }
+        }
+    }
+
+    tasks.register('dockerBuild') {
+        dependsOn 'buildFrontend'
+        doLast {
+            exec {
+                commandLine 'docker', 'build', '-t', 
+                    "${containerRegistry}/${containerNamespace}/${project.name}:${project.version}", '.'
+            }
+        }
+    }
+}
+
+// ============================================
+// CONNECTOR MODULES (connectors/*)
+// ============================================
+configure(subprojects.findAll { it.path.startsWith(':connectors:') }) {
+    apply plugin: 'java-library'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    // Connectors are libraries loaded by connector-service
+    tasks.named('bootJar') { enabled = false }
+    tasks.named('jar') { enabled = true }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    dependencies {
+        implementation project(':libs:common')
+        compileOnly 'org.projectlombok:lombok:1.18.30'
+        annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    }
+}
+
+// Root project doesn't produce artifacts
+tasks.named('jar') { enabled = false }
+if (tasks.findByName('bootJar')) {
+    tasks.named('bootJar') { enabled = false }
+}
+
+// ============================================
+// CUSTOM TASKS
+// ============================================
+
+// Build all backend services
+tasks.register('buildAllServices') {
+    dependsOn subprojects.findAll { it.path.startsWith(':services:') }.collect { "${it.path}:build" }
+}
+
+// Build all container images
+tasks.register('buildAllImages') {
+    dependsOn subprojects.findAll { it.path.startsWith(':services:') }.collect { "${it.path}:jibDockerBuild" }
+}
+
+// Push all container images
+tasks.register('pushAllImages') {
+    dependsOn subprojects.findAll { it.path.startsWith(':services:') }.collect { "${it.path}:jib" }
+}

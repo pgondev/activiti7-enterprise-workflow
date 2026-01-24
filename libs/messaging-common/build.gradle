@@ -1,0 +1,16 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'Shared messaging components for event-driven architecture'
+
+dependencies {
+    implementation project(':libs:common')
+    
+    // Messaging
+    api 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
+    api 'org.springframework.kafka:spring-kafka'
+    
+    // For choosing between RabbitMQ and Kafka
+    api 'org.springframework.boot:spring-boot-starter-amqp'
+}

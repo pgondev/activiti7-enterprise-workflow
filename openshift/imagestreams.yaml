@@ -1,0 +1,87 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: workflow-engine
+  namespace: workflow
+  labels:
+    app: workflow-engine
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: task-service
+  namespace: workflow
+  labels:
+    app: task-service
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: form-service
+  namespace: workflow
+  labels:
+    app: form-service
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: decision-engine
+  namespace: workflow
+  labels:
+    app: decision-engine
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: case-engine
+  namespace: workflow
+  labels:
+    app: case-engine
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: modeler-ui
+  namespace: workflow
+  labels:
+    app: modeler-ui
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: tasklist-ui
+  namespace: workflow
+  labels:
+    app: tasklist-ui
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: admin-ui
+  namespace: workflow
+  labels:
+    app: admin-ui
+spec:
+  lookupPolicy:
+    local: true

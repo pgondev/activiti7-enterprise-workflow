@@ -1,0 +1,82 @@
+rootProject.name = 'activiti7-enterprise-workflow'
+
+// ============================================
+// INDEPENDENTLY DEPLOYABLE SERVICES
+// Each module below is a standalone microservice
+// deployable on OpenShift/Kubernetes
+// ============================================
+
+// Shared Libraries (not deployable, just dependencies)
+include 'libs:common'
+include 'libs:security-common'
+include 'libs:messaging-common'
+
+// ============================================
+// CORE ENGINE SERVICES
+// ============================================
+include 'services:workflow-engine'        // BPMN 2.0 Runtime Engine
+include 'services:decision-engine'        // DMN Decision Engine  
+include 'services:case-engine'            // CMMN Case Engine
+
+// ============================================
+// DATA SERVICES
+// ============================================
+include 'services:query-service'          // Read-optimized queries
+include 'services:audit-service'          // Event logging & audit trail
+include 'services:history-service'        // Historical data & analytics
+include 'services:reporting-service'      // Dashboards, analytics, process insights
+
+// ============================================
+// USER-FACING SERVICES
+// ============================================
+include 'services:task-service'           // User task management API
+include 'services:form-service'           // Dynamic forms API
+include 'services:notification-service'   // Alerts & notifications
+
+// ============================================
+// CONTENT & AI SERVICES
+// ============================================
+include 'services:content-service'        // Document management
+include 'services:ai-service'             // AI/ML automation
+
+// ============================================
+// INTEGRATION SERVICES
+// ============================================
+include 'services:connector-service'      // Cloud connectors orchestration
+include 'services:gateway-service'        // API Gateway
+
+// ============================================
+// FRONTEND APPLICATIONS (Independently Deployable)
+// ============================================
+include 'apps:tasklist-ui'                // End-user task application
+include 'apps:modeler-ui'                 // Process designer/editor (bpmn-js)
+include 'apps:admin-ui'                   // Admin console
+include 'apps:forms-ui'                   // Public forms renderer (form.io)
+include 'apps:reporting-ui'               // Dashboards & analytics
+
+// ============================================
+// CONNECTORS (Plugin-style, hot-deployable)
+// ============================================
+include 'connectors:rest-connector'
+include 'connectors:email-connector'
+include 'connectors:slack-connector'
+include 'connectors:teams-connector'
+include 'connectors:salesforce-connector'
+include 'connectors:sap-connector'
+
+// Microsoft 365 Connectors
+include 'connectors:ms365-outlook-connector'
+include 'connectors:ms365-sharepoint-connector'
+include 'connectors:ms365-teams-connector'
+include 'connectors:ms365-onedrive-connector'
+include 'connectors:ms365-planner-connector'
+
+// Cloud Storage Connectors  
+include 'connectors:aws-s3-connector'
+include 'connectors:azure-blob-connector'
+include 'connectors:google-drive-connector'
+
+// ============================================
+// DEPLOYMENT CONFIGS (Not buildable, just configs)
+// ============================================
+// k8s/ and openshift/ directories contain deployment manifests

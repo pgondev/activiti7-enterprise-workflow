@@ -1,0 +1,259 @@
+{
+    "realm": "workflow",
+    "enabled": true,
+    "displayName": "Workflow Platform",
+    "sslRequired": "none",
+    "registrationAllowed": false,
+    "loginWithEmailAllowed": true,
+    "duplicateEmailsAllowed": false,
+    "resetPasswordAllowed": true,
+    "editUsernameAllowed": false,
+    "bruteForceProtected": true,
+    "roles": {
+        "realm": [
+            {
+                "name": "workflow-admin",
+                "description": "Administrator with full access"
+            },
+            {
+                "name": "workflow-user",
+                "description": "Standard workflow user"
+            },
+            {
+                "name": "workflow-modeler",
+                "description": "Can design and deploy processes"
+            },
+            {
+                "name": "workflow-analyst",
+                "description": "Can view reports and analytics"
+            }
+        ]
+    },
+    "groups": [
+        {
+            "name": "Administrators",
+            "path": "/Administrators",
+            "realmRoles": [
+                "workflow-admin"
+            ]
+        },
+        {
+            "name": "Users",
+            "path": "/Users",
+            "realmRoles": [
+                "workflow-user"
+            ]
+        },
+        {
+            "name": "Modelers",
+            "path": "/Modelers",
+            "realmRoles": [
+                "workflow-modeler"
+            ]
+        },
+        {
+            "name": "Analysts",
+            "path": "/Analysts",
+            "realmRoles": [
+                "workflow-analyst"
+            ]
+        }
+    ],
+    "clients": [
+        {
+            "clientId": "workflow-modeler-ui",
+            "name": "Process Modeler",
+            "enabled": true,
+            "publicClient": true,
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": true,
+            "redirectUris": [
+                "http://localhost:5173/*",
+                "http://localhost:3001/*"
+            ],
+            "webOrigins": [
+                "http://localhost:5173",
+                "http://localhost:3001"
+            ],
+            "defaultClientScopes": [
+                "openid",
+                "profile",
+                "email",
+                "roles"
+            ]
+        },
+        {
+            "clientId": "workflow-tasklist-ui",
+            "name": "Tasklist Application",
+            "enabled": true,
+            "publicClient": true,
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": true,
+            "redirectUris": [
+                "http://localhost:5174/*",
+                "http://localhost:3002/*"
+            ],
+            "webOrigins": [
+                "http://localhost:5174",
+                "http://localhost:3002"
+            ],
+            "defaultClientScopes": [
+                "openid",
+                "profile",
+                "email",
+                "roles"
+            ]
+        },
+        {
+            "clientId": "workflow-admin-ui",
+            "name": "Admin Console",
+            "enabled": true,
+            "publicClient": true,
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": true,
+            "redirectUris": [
+                "http://localhost:5175/*",
+                "http://localhost:3003/*"
+            ],
+            "webOrigins": [
+                "http://localhost:5175",
+                "http://localhost:3003"
+            ],
+            "defaultClientScopes": [
+                "openid",
+                "profile",
+                "email",
+                "roles"
+            ]
+        },
+        {
+            "clientId": "workflow-reporting-ui",
+            "name": "Reporting Dashboard",
+            "enabled": true,
+            "publicClient": true,
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": true,
+            "redirectUris": [
+                "http://localhost:5176/*",
+                "http://localhost:3004/*"
+            ],
+            "webOrigins": [
+                "http://localhost:5176",
+                "http://localhost:3004"
+            ],
+            "defaultClientScopes": [
+                "openid",
+                "profile",
+                "email",
+                "roles"
+            ]
+        },
+        {
+            "clientId": "workflow-backend",
+            "name": "Backend Services",
+            "enabled": true,
+            "publicClient": false,
+            "secret": "backend-secret-change-in-production",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "defaultClientScopes": [
+                "openid",
+                "profile",
+                "email",
+                "roles"
+            ]
+        }
+    ],
+    "users": [
+        {
+            "username": "admin",
+            "email": "admin@example.com",
+            "firstName": "Admin",
+            "lastName": "User",
+            "enabled": true,
+            "emailVerified": true,
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "admin123",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "workflow-admin",
+                "workflow-modeler",
+                "workflow-analyst",
+                "workflow-user"
+            ],
+            "groups": [
+                "/Administrators"
+            ]
+        },
+        {
+            "username": "modeler",
+            "email": "modeler@example.com",
+            "firstName": "Process",
+            "lastName": "Modeler",
+            "enabled": true,
+            "emailVerified": true,
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "modeler123",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "workflow-modeler",
+                "workflow-user"
+            ],
+            "groups": [
+                "/Modelers"
+            ]
+        },
+        {
+            "username": "user",
+            "email": "user@example.com",
+            "firstName": "Standard",
+            "lastName": "User",
+            "enabled": true,
+            "emailVerified": true,
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "user123",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "workflow-user"
+            ],
+            "groups": [
+                "/Users"
+            ]
+        },
+        {
+            "username": "analyst",
+            "email": "analyst@example.com",
+            "firstName": "Data",
+            "lastName": "Analyst",
+            "enabled": true,
+            "emailVerified": true,
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "analyst123",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "workflow-analyst",
+                "workflow-user"
+            ],
+            "groups": [
+                "/Analysts"
+            ]
+        }
+    ]
+}

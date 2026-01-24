@@ -1,0 +1,31 @@
+description = 'Reporting & Analytics Service - Dashboards, KPIs, and Process Insights'
+
+dependencies {
+    implementation project(':libs:messaging-common')
+    
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    
+    // Elasticsearch for analytics queries
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+    
+    // Redis for caching dashboard data
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    
+    // GraphQL for flexible data queries (optional)
+    implementation 'org.springframework.boot:spring-boot-starter-graphql'
+    
+    // Apache POI for Excel exports
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
+    
+    // PDF generation
+    implementation 'com.itextpdf:itext-core:8.0.2'
+    
+    // Chart data processing
+    implementation 'org.json:json:20231013'
+    
+    // Testing
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:elasticsearch'
+}

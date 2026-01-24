@@ -1,0 +1,14 @@
+description = 'Dynamic Form Builder and Renderer Service'
+
+dependencies {
+    implementation project(':libs:messaging-common')
+    
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    
+    // MongoDB for flexible form storage (optional)
+    // implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    
+    // Testing
+    testImplementation 'org.testcontainers:postgresql'
+}
