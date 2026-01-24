@@ -1,62 +1,99 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { FileCode, Table2, Plus, Search, MoreVertical, Play, Trash2, Copy, Edit } from 'lucide-react'
+import { Search, Plus, FileCode2, Table2, MoreVertical, Play, RefreshCw } from 'lucide-react'
+import { processApi, instanceApi } from '../api/client'
 
 interface ProcessDefinition {
     id: string
     key: string
     name: string
-    type: 'BPMN' | 'DMN'
     version: number
-    deployedAt: string
-    instances: number
+    deploymentId: string
+    description: string | null
+    category: string | null
 }
 
-const mockProcesses: ProcessDefinition[] = [
-    { id: '1', key: 'employee-onboarding', name: 'Employee Onboarding', type: 'BPMN', version: 3, deployedAt: '2024-01-15', instances: 45 },
-    { id: '2', key: 'loan-approval', name: 'Loan Approval Process', type: 'BPMN', version: 5, deployedAt: '2024-01-10', instances: 128 },
-    { id: '3', key: 'risk-assessment', name: 'Risk Assessment', type: 'DMN', version: 2, deployedAt: '2024-01-12', instances: 89 },
-    { id: '4', key: 'expense-approval', name: 'Expense Approval', type: 'BPMN', version: 4, deployedAt: '2024-01-08', instances: 234 },
-    { id: '5', key: 'discount-rules', name: 'Discount Rules', type: 'DMN', version: 1, deployedAt: '2024-01-05', instances: 567 },
-    { id: '6', key: 'customer-support', name: 'Customer Support Ticket', type: 'BPMN', version: 2, deployedAt: '2024-01-03', instances: 789 },
-]
-
 export default function ProcessList() {
+    const [processes, setProcesses] = useState<ProcessDefinition[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [search, setSearch] = useState('')
-    const [filter, setFilter] = useState<'all' | 'BPMN' | 'DMN'>('all')
+    const [typeFilter, setTypeFilter] = useState<string>('all')
 
-    const filteredProcesses = mockProcesses.filter((p) => {
-        const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-            p.key.toLowerCase().includes(search.toLowerCase())
-        const matchesFilter = filter === 'all' || p.type === filter
-        return matchesSearch && matchesFilter
+    useEffect(() => {
+        fetchProcesses()
+    }, [])
+
+    const fetchProcesses = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const response = await processApi.getDefinitions({ page: 0, size: 50 })
+            setProcesses(response.data || [])
+        } catch (err) {
+            console.error('Failed to fetch processes:', err)
+            setError('Failed to connect to backend')
+            // Use mock data as fallback
+            setProcesses([
+                { id: 'proc:1', key: 'loan-approval', name: 'Loan Approval Process', version: 1, deploymentId: 'dep-1', description: 'Approval workflow for loan applications', category: 'finance' },
+                { id: 'proc:2', key: 'employee-onboarding', name: 'Employee Onboarding', version: 2, deploymentId: 'dep-2', description: 'New hire onboarding process', category: 'hr' },
+                { id: 'proc:3', key: 'expense-approval', name: 'Expense Approval', version: 1, deploymentId: 'dep-3', description: 'Expense report approval workflow', category: 'finance' },
+            ])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleStartProcess = async (processKey: string) => {
+        try {
+            await instanceApi.startProcess(processKey, {})
+            alert(`Process ${processKey} started successfully!`)
+        } catch (err) {
+            console.error('Failed to start process:', err)
+            alert('Failed to start process')
+        }
+    }
+
+    const filteredProcesses = processes.filter((p) => {
+        const matchesSearch = (p.name || p.key).toLowerCase().includes(search.toLowerCase())
+        return matchesSearch
     })
 
     return (
         <div className="p-8 animate-fade-in">
             {/* Header */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Process Definitions</h1>
-                    <p className="text-slate-400">Manage your BPMN and DMN definitions</p>
+                    <h1 className="text-2xl font-bold text-white mb-1">Process Definitions</h1>
+                    <p className="text-slate-400">
+                        {processes.length} process definitions deployed
+                    </p>
                 </div>
                 <div className="flex gap-3">
+                    <button
+                        onClick={fetchProcesses}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                        title="Refresh"
+                    >
+                        <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                        Refresh
+                    </button>
                     <Link
-                        to="/modeler/bpmn"
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg shadow-blue-600/30"
+                        to="/bpmn/new"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
                         <Plus size={18} />
-                        New BPMN
-                    </Link>
-                    <Link
-                        to="/modeler/dmn"
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-lg shadow-indigo-600/30"
-                    >
-                        <Plus size={18} />
-                        New DMN
+                        New Process
                     </Link>
                 </div>
             </div>
+
+            {/* Error Banner */}
+            {error && (
+                <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg text-yellow-400">
+                    ⚠️ {error} - Showing demo data
+                </div>
+            )}
 
             {/* Filters */}
             <div className="flex gap-4 mb-6">
@@ -67,77 +104,87 @@ export default function ProcessList() {
                         placeholder="Search processes..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                        className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                        aria-label="Search processes"
                     />
                 </div>
-                <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
-                    {(['all', 'BPMN', 'DMN'] as const).map((f) => (
+
+                <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-1 border border-slate-700">
+                    {(['all', 'bpmn', 'dmn'] as const).map((type) => (
                         <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${filter === f
+                            key={type}
+                            onClick={() => setTypeFilter(type)}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${typeFilter === type
                                     ? 'bg-blue-600 text-white'
                                     : 'text-slate-400 hover:text-white'
                                 }`}
                         >
-                            {f === 'all' ? 'All' : f}
+                            {type.toUpperCase()}
                         </button>
                     ))}
                 </div>
             </div>
 
+            {/* Loading State */}
+            {loading && (
+                <div className="text-center py-12 text-slate-400">
+                    <RefreshCw size={32} className="mx-auto mb-4 animate-spin" />
+                    <p>Loading processes...</p>
+                </div>
+            )}
+
             {/* Process Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProcesses.map((process) => (
-                    <div
-                        key={process.id}
-                        className="bg-slate-800 rounded-xl border border-slate-700 p-5 hover:border-slate-600 transition-colors group"
-                    >
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${process.type === 'BPMN' ? 'bg-blue-600/20 text-blue-400' : 'bg-indigo-600/20 text-indigo-400'
-                                    }`}>
-                                    {process.type === 'BPMN' ? <FileCode size={20} /> : <Table2 size={20} />}
+            {!loading && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredProcesses.map((process) => (
+                        <div
+                            key={process.id}
+                            className="bg-slate-800 rounded-xl border border-slate-700 p-5 hover:border-blue-500/50 transition-all group"
+                        >
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="p-2 bg-blue-600/20 rounded-lg">
+                                    <FileCode2 size={20} className="text-blue-400" />
                                 </div>
-                                <div>
-                                    <h3 className="font-semibold text-white">{process.name}</h3>
-                                    <p className="text-sm text-slate-400">{process.key}</p>
+                                <div className="flex gap-1">
+                                    <button
+                                        onClick={() => handleStartProcess(process.key)}
+                                        className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-green-400 transition-colors"
+                                        title="Start Instance"
+                                    >
+                                        <Play size={16} />
+                                    </button>
+                                    <button
+                                        className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
+                                        title="More options"
+                                    >
+                                        <MoreVertical size={16} />
+                                    </button>
                                 </div>
                             </div>
-                            <button className="p-1 hover:bg-slate-700 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                <MoreVertical size={18} className="text-slate-400" />
-                            </button>
-                        </div>
 
-                        <div className="flex items-center gap-4 text-sm text-slate-400 mb-4">
-                            <span>v{process.version}</span>
-                            <span>•</span>
-                            <span>{process.instances} instances</span>
-                            <span>•</span>
-                            <span>{process.deployedAt}</span>
-                        </div>
+                            <h3 className="font-semibold text-white mb-1 group-hover:text-blue-400 transition-colors">
+                                {process.name || process.key}
+                            </h3>
+                            <p className="text-sm text-slate-400 mb-3 line-clamp-2">
+                                {process.description || 'No description'}
+                            </p>
 
-                        <div className="flex gap-2">
-                            <Link
-                                to={`/modeler/${process.type.toLowerCase()}/${process.id}`}
-                                className="flex-1 flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm"
-                            >
-                                <Edit size={16} />
-                                Edit
-                            </Link>
-                            <button className="p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
-                                <Play size={16} />
-                            </button>
-                            <button className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white rounded-lg transition-colors">
-                                <Copy size={16} />
-                            </button>
-                            <button className="p-2 bg-slate-700 hover:bg-red-600 text-slate-400 hover:text-white rounded-lg transition-colors">
-                                <Trash2 size={16} />
-                            </button>
+                            <div className="flex items-center gap-3 text-xs text-slate-500">
+                                <span className="px-2 py-0.5 bg-slate-700 rounded">v{process.version}</span>
+                                <span>{process.key}</span>
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+
+                    {filteredProcesses.length === 0 && !loading && (
+                        <div className="col-span-3 text-center py-12 text-slate-400">
+                            <FileCode2 size={48} className="mx-auto mb-4 opacity-50" />
+                            <p className="text-lg">No processes found</p>
+                            <p className="text-sm mt-1">Deploy a BPMN process to get started</p>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     )
 }
