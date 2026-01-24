@@ -3,12 +3,14 @@ description = 'DMN 1.3 Decision Engine for Business Rules'
 dependencies {
     implementation project(':libs:messaging-common')
     
-    // Activiti DMN
-    implementation 'org.activiti:activiti-dmn-spring'
-    implementation 'org.activiti:activiti-dmn-engine'
+    // Use standalone Activiti engine (not Cloud to avoid dependency issues)
+    implementation 'org.activiti:activiti-engine:7.1.0.M6'
+    implementation 'org.activiti:activiti-spring:7.1.0.M6'
     
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     
     // Testing
     testImplementation 'org.testcontainers:postgresql'
