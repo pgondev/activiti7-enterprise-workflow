@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { Save, Download, Upload, Play, ZoomIn, ZoomOut, Maximize } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Save, Download, Upload, Play, ZoomIn, ZoomOut, Maximize, CheckCircle, AlertCircle } from 'lucide-react'
 import BpmnJS from 'bpmn-js/lib/Modeler'
 import 'bpmn-js/dist/assets/diagram-js.css'
 import 'bpmn-js/dist/assets/bpmn-js.css'
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css'
+import { deploymentApi } from '../api/client'
 
 const defaultDiagram = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
@@ -48,10 +49,13 @@ const defaultDiagram = `<?xml version="1.0" encoding="UTF-8"?>
 
 export default function BpmnModeler() {
     const { id } = useParams()
+    const navigate = useNavigate()
     const containerRef = useRef<HTMLDivElement>(null)
     const modelerRef = useRef<BpmnJS | null>(null)
     const [processName, setProcessName] = useState('New Process')
     const [isDirty, setIsDirty] = useState(false)
+    const [status, setStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
+    const [deploying, setDeploying] = useState(false)
 
     useEffect(() => {
         if (!containerRef.current) return
@@ -83,8 +87,46 @@ export default function BpmnModeler() {
         if (!modelerRef.current) return
         const { xml } = await modelerRef.current.saveXML({ format: true })
         console.log('Saved BPMN:', xml)
-        // TODO: Call API to save
+        // For now, just download the file
+        const blob = new Blob([xml || ''], { type: 'application/xml' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${processName.toLowerCase().replace(/\s+/g, '-')}.bpmn`
+        a.click()
+        URL.revokeObjectURL(url)
         setIsDirty(false)
+        setStatus({ type: 'success', message: 'File downloaded' })
+        setTimeout(() => setStatus({ type: null, message: '' }), 3000)
+    }
+
+    const handleDeploy = async () => {
+        if (!modelerRef.current) return
+
+        setDeploying(true)
+        setStatus({ type: null, message: '' })
+
+        try {
+            const { xml } = await modelerRef.current.saveXML({ format: true })
+
+            const response = await deploymentApi.deploy(processName, xml || '')
+
+            setIsDirty(false)
+            setStatus({ type: 'success', message: `Deployed successfully! ID: ${response.data.id}` })
+
+            // Redirect to process list after 2 seconds
+            setTimeout(() => {
+                navigate('/processes')
+            }, 2000)
+        } catch (err: any) {
+            console.error('Deployment failed:', err)
+            setStatus({
+                type: 'error',
+                message: err.response?.data?.message || err.message || 'Deployment failed. Is the backend running?'
+            })
+        } finally {
+            setDeploying(false)
+        }
     }
 
     const handleExport = async () => {
@@ -109,6 +151,7 @@ export default function BpmnModeler() {
             await modelerRef.current?.importXML(xml)
             const canvas = modelerRef.current?.get('canvas') as any
             canvas?.zoom('fit-viewport')
+            setProcessName(file.name.replace(/\.bpmn$|\.xml$/, ''))
         }
         reader.readAsText(file)
     }
@@ -130,6 +173,15 @@ export default function BpmnModeler() {
 
     return (
         <div className="h-full flex flex-col">
+            {/* Status Banner */}
+            {status.type && (
+                <div className={`px-4 py-2 flex items-center gap-2 ${status.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+                    } text-white`}>
+                    {status.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                    {status.message}
+                </div>
+            )}
+
             {/* Toolbar */}
             <div className="h-14 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4">
                 <div className="flex items-center gap-4">
@@ -138,6 +190,8 @@ export default function BpmnModeler() {
                         value={processName}
                         onChange={(e) => setProcessName(e.target.value)}
                         className="bg-transparent text-white font-semibold text-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                        aria-label="Process name"
+                        placeholder="Process Name"
                     />
                     {isDirty && <span className="text-yellow-400 text-sm">• Unsaved changes</span>}
                 </div>
@@ -180,10 +234,15 @@ export default function BpmnModeler() {
                     </button>
 
                     <button
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-lg shadow-green-600/30"
+                        onClick={handleDeploy}
+                        disabled={deploying}
+                        className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors shadow-lg ${deploying
+                                ? 'bg-gray-600 cursor-not-allowed'
+                                : 'bg-green-600 hover:bg-green-700 shadow-green-600/30'
+                            }`}
                     >
-                        <Play size={18} />
-                        <span className="text-sm font-medium">Deploy</span>
+                        <Play size={18} className={deploying ? 'animate-pulse' : ''} />
+                        <span className="text-sm font-medium">{deploying ? 'Deploying...' : 'Deploy'}</span>
                     </button>
                 </div>
             </div>
