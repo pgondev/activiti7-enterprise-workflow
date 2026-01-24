@@ -3,11 +3,13 @@ description = 'BPMN 2.0 Process Execution Engine - Core workflow runtime based o
 dependencies {
     implementation project(':libs:messaging-common')
     
-    // Activiti7 Cloud Runtime Bundle
-    implementation 'org.activiti.cloud:activiti-cloud-starter-runtime-bundle'
+    // Activiti7 Engine (standalone - no Cloud security requirements)
+    implementation 'org.activiti:activiti-spring-boot-starter:7.1.0.M6'
     
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     
     // Messaging
     implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'

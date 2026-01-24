@@ -2,6 +2,7 @@ package com.enterprise.workflow.engine;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
@@ -11,8 +12,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
  * Provides process deployment, instance management, and signal handling.
  */
 @SpringBootApplication(scanBasePackages = {
-    "com.enterprise.workflow.engine",
-    "com.enterprise.workflow.common"
+        "com.enterprise.workflow.engine",
+        "com.enterprise.workflow.common"
+}, exclude = {
+        OAuth2ResourceServerAutoConfiguration.class
 })
 @EnableAsync
 public class WorkflowEngineApplication {
