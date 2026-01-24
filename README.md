@@ -116,6 +116,32 @@ npm install
 npm run dev
 ```
 
+
+## 🔗 Access Links
+
+### Frontend Applications
+| Application | URL | Description | Login (Dev) |
+|-------------|-----|-------------|-------------|
+| **Modeler UI** | http://localhost:3000 | BPMN/DMN Designer | N/A |
+| **Tasklist UI** | http://localhost:3001 | User Task Inbox | N/A |
+| **Admin UI** | http://localhost:3002 | Platform Admin | N/A |
+
+### Backend Services
+| Service | API URL | Swagger UI | Port |
+|---------|---------|------------|------|
+| **Workflow Engine** | `/api/v1` | [Swagger UI](http://localhost:8080/swagger-ui.html) | 8080 |
+| **Task Service** | `/api/v1` | [Swagger UI](http://localhost:8081/swagger-ui.html) | 8081 |
+| **Form Service** | `/api/v1` | [Swagger UI](http://localhost:8082/swagger-ui.html) | 8082 |
+| **Decision Engine** | `/api/v1` | [Swagger UI](http://localhost:8083/swagger-ui.html) | 8083 |
+
+### Infrastructure
+| Service | URL | Credentials (Dev) |
+|---------|-----|-------------------|
+| **Keycloak** | http://localhost:8180 | admin / admin123 |
+| **RabbitMQ** | http://localhost:15672 | workflow / workflow123 |
+| **MinIO** | http://localhost:9001 | workflow / workflow123 |
+| **Grafana** | http://localhost:3030 | admin / admin123 |
+
 ## 🐳 Container Build
 
 Using JIB (no Docker daemon required):
