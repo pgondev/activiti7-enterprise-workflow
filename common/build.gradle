@@ -1,13 +1,30 @@
 plugins {
     id 'java-library'
+    id 'io.spring.dependency-management'
+}
+
+ext {
+    set('springdocVersion', '2.3.0')
+    set('mapstructVersion', '1.5.5.Final')
+    set('springCloudVersion', '2023.0.0')
+    set('activitiCloudVersion', '8.0.0')
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://artifacts.alfresco.com/nexus/content/repositories/activiti-releases' }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "org.activiti.cloud:activiti-cloud-dependencies:${activitiCloudVersion}"
+    }
 }
 
 description = 'Shared utilities, DTOs, and common components'
 
 // This module doesn't need Spring Boot plugin to create executable
-tasks.named('bootJar') {
-    enabled = false
-}
 tasks.named('jar') {
     enabled = true
 }
@@ -32,4 +49,8 @@ dependencies {
     // Jackson
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }

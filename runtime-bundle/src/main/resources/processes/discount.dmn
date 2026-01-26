@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/1.0" id="Definitions_1x5x1x1" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.4.0">
+  <decision id="discount-decision" name="Discount Calculation">
+    <decisionTable id="DecisionTable_1x5x1x1" hitPolicy="UNIQUE">
+      <input id="Input_1" label="Customer Status">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>status</text>
+        </inputExpression>
+      </input>
+      <input id="Input_2" label="Order Amount">
+        <inputExpression id="InputExpression_2" typeRef="integer">
+          <text>amount</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Discount" name="discount" typeRef="double" />
+      <rule id="DecisionRule_0x5x1x1">
+        <inputEntry id="UnaryTests_0x5x1x1">
+          <text>"GOLD"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0x5x1x2">
+          <text>&gt;= 1000</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0x5x1x1">
+          <text>0.10</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0x5x1x2">
+        <inputEntry id="UnaryTests_0x5x1x3">
+          <text>"GOLD"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0x5x1x4">
+          <text>&lt; 1000</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0x5x1x2">
+          <text>0.05</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0x5x1x3">
+        <inputEntry id="UnaryTests_0x5x1x5">
+          <text>"SILVER"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0x5x1x6">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0x5x1x3">
+          <text>0.02</text>
+        </outputEntry>
+      </rule>
+       <rule id="DecisionRule_0x5x1x4">
+        <inputEntry id="UnaryTests_0x5x1x7">
+          <text>"BRONZE"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0x5x1x8">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0x5x1x4">
+          <text>0.0</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

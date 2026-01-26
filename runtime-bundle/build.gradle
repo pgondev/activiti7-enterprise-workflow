@@ -1,4 +1,37 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+}
+
 description = 'BPMN 2.0 process execution engine based on Activiti7'
+
+ext {
+    set('springCloudVersion', '2023.0.0')
+    set('activitiCloudVersion', '8.0.0')
+    set('springdocVersion', '2.3.0')
+    set('flywayVersion', '10.6.0')
+}
+
+group = 'com.enterprise.workflow'
+version = '1.0.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://artifacts.alfresco.com/nexus/content/repositories/activiti-releases' }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "org.activiti.cloud:activiti-cloud-dependencies:${activitiCloudVersion}"
+    }
+}
 
 dependencies {
     // Common Module
@@ -29,4 +62,8 @@ dependencies {
     // Testing
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:rabbitmq'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }

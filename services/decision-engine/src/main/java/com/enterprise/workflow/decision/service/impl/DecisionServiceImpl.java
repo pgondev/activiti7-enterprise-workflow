@@ -4,15 +4,16 @@ import com.enterprise.workflow.decision.dto.*;
 import com.enterprise.workflow.decision.service.DecisionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.activiti.engine.RepositoryService;
-import org.activiti.engine.repository.Deployment;
-import org.activiti.engine.repository.ProcessDefinition;
+import org.flowable.dmn.api.DmnDecision;
+import org.flowable.dmn.api.DmnDeployment;
+import org.flowable.dmn.api.DmnRepositoryService;
+import org.flowable.dmn.api.DmnDecisionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -20,24 +21,27 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Implementation of DecisionService.
- * Uses Activiti Cloud runtime for DMN execution.
+ * Implementation of DecisionService using Flowable DMN.
+ * Migrated from Activiti to Flowable for embedded DMN support.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class DecisionServiceImpl implements DecisionService {
 
-        private final RepositoryService repositoryService;
+        private final DmnRepositoryService repositoryService;
+        private final DmnDecisionService ruleService;
 
         @Override
+        @Transactional(readOnly = true)
         public Page<DecisionDefinitionResponse> getDecisions(Pageable pageable) {
                 // Query deployed decision definitions
-                List<ProcessDefinition> definitions = repositoryService.createProcessDefinitionQuery()
-                                .orderByProcessDefinitionKey().asc()
+                List<DmnDecision> definitions = repositoryService.createDecisionQuery()
+                                .orderByDecisionKey().asc()
                                 .listPage((int) pageable.getOffset(), pageable.getPageSize());
 
-                long total = repositoryService.createProcessDefinitionQuery().count();
+                long total = repositoryService.createDecisionQuery().count();
 
                 List<DecisionDefinitionResponse> responses = definitions.stream()
                                 .map(this::mapToResponse)
@@ -47,9 +51,10 @@ public class DecisionServiceImpl implements DecisionService {
         }
 
         @Override
+        @Transactional(readOnly = true)
         public DecisionDefinitionResponse getDecision(String decisionId) {
-                ProcessDefinition definition = repositoryService.createProcessDefinitionQuery()
-                                .processDefinitionId(decisionId)
+                DmnDecision definition = repositoryService.createDecisionQuery()
+                                .decisionId(decisionId)
                                 .singleResult();
 
                 if (definition == null) {
@@ -60,9 +65,10 @@ public class DecisionServiceImpl implements DecisionService {
         }
 
         @Override
+        @Transactional(readOnly = true)
         public DecisionDefinitionResponse getDecisionByKey(String decisionKey) {
-                ProcessDefinition definition = repositoryService.createProcessDefinitionQuery()
-                                .processDefinitionKey(decisionKey)
+                DmnDecision definition = repositoryService.createDecisionQuery()
+                                .decisionKey(decisionKey)
                                 .latestVersion()
                                 .singleResult();
 
@@ -74,9 +80,10 @@ public class DecisionServiceImpl implements DecisionService {
         }
 
         @Override
+        @Transactional(readOnly = true)
         public String getDecisionXml(String decisionId) {
-                ProcessDefinition definition = repositoryService.createProcessDefinitionQuery()
-                                .processDefinitionId(decisionId)
+                DmnDecision definition = repositoryService.createDecisionQuery()
+                                .decisionId(decisionId)
                                 .singleResult();
 
                 if (definition == null) {
@@ -95,11 +102,9 @@ public class DecisionServiceImpl implements DecisionService {
         public DeploymentResponse deployDecision(DeployDecisionRequest request) {
                 log.debug("Deploying decision: {}", request.getName());
 
-                Deployment deployment = repositoryService.createDeployment()
+                DmnDeployment deployment = repositoryService.createDeployment()
                                 .name(request.getName())
-                                .addInputStream(request.getName() + ".dmn",
-                                                new ByteArrayInputStream(
-                                                                request.getDmnXml().getBytes(StandardCharsets.UTF_8)))
+                                .addString(request.getName() + ".dmn", request.getDmnXml())
                                 .tenantId(request.getTenantId())
                                 .category(request.getCategory())
                                 .deploy();
@@ -118,7 +123,7 @@ public class DecisionServiceImpl implements DecisionService {
         @Override
         public void deleteDeployment(String deploymentId) {
                 log.debug("Deleting deployment: {}", deploymentId);
-                repositoryService.deleteDeployment(deploymentId, true);
+                repositoryService.deleteDeployment(deploymentId);
         }
 
         @Override
@@ -127,10 +132,18 @@ public class DecisionServiceImpl implements DecisionService {
 
                 long startTime = System.currentTimeMillis();
 
-                // Decision execution would typically use DMN engine
-                // This is a placeholder - actual implementation depends on DMN runtime
+                // Execute decision using Flowable DMN engine
+                // Flowable executeDecisionByKey returns Map<String, Object> (single) or
+                // List<Map<String, Object>> (multiple)
+                Map<String, Object> output = ruleService.createExecuteDecisionBuilder()
+                                .decisionKey(decisionKey)
+                                .variables(variables)
+                                .executeWithSingleResult();
+
                 List<Map<String, Object>> outputs = new ArrayList<>();
-                outputs.add(variables); // Echo back for now
+                if (output != null) {
+                        outputs.add(output);
+                }
 
                 long executionTime = System.currentTimeMillis() - startTime;
 
@@ -160,13 +173,13 @@ public class DecisionServiceImpl implements DecisionService {
         @Override
         public Page<DecisionExecutionHistoryResponse> getExecutionHistory(
                         String decisionKey, String processInstanceId, Pageable pageable) {
-                // History would come from audit logs
+                // Placeholder for history
                 return new PageImpl<>(new ArrayList<>(), pageable, 0);
         }
 
         @Override
         public DecisionExecutionHistoryResponse getExecution(String executionId) {
-                throw new RuntimeException("Execution not found: " + executionId);
+                throw new UnsupportedOperationException("History not implemented yet");
         }
 
         @Override
@@ -192,7 +205,7 @@ public class DecisionServiceImpl implements DecisionService {
                                 .build();
         }
 
-        private DecisionDefinitionResponse mapToResponse(ProcessDefinition definition) {
+        private DecisionDefinitionResponse mapToResponse(DmnDecision definition) {
                 return DecisionDefinitionResponse.builder()
                                 .id(definition.getId())
                                 .key(definition.getKey())

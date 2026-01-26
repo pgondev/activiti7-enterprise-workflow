@@ -34,7 +34,7 @@ public class ProcessServiceImpl implements ProcessService {
 
     @Override
     public ProcessInstanceDTO startProcess(String processDefinitionKey, String businessKey,
-                                           Map<String, Object> variables) {
+            Map<String, Object> variables) {
         log.info("Starting process: {} with businessKey: {}", processDefinitionKey, businessKey);
 
         ProcessInstance processInstance = processRuntime.start(
@@ -42,8 +42,7 @@ public class ProcessServiceImpl implements ProcessService {
                         .withProcessDefinitionKey(processDefinitionKey)
                         .withBusinessKey(businessKey)
                         .withVariables(variables)
-                        .build()
-        );
+                        .build());
 
         log.info("Process started with ID: {}", processInstance.getId());
         return mapToDTO(processInstance);
@@ -67,44 +66,40 @@ public class ProcessServiceImpl implements ProcessService {
             org.springframework.data.domain.Pageable pageable) {
 
         Page<ProcessInstance> instances = processRuntime.processInstances(
-                Pageable.of(pageable.getPageNumber(), pageable.getPageSize())
-        );
+                Pageable.of(pageable.getPageNumber(), pageable.getPageSize()));
 
         return new org.springframework.data.domain.PageImpl<>(
                 instances.getContent().stream()
-                        .filter(pi -> processDefinitionKey == null || 
+                        .filter(pi -> processDefinitionKey == null ||
                                 pi.getProcessDefinitionKey().equals(processDefinitionKey))
                         .map(this::mapToDTO)
                         .toList(),
                 pageable,
-                instances.getTotalItems()
-        );
+                instances.getTotalItems());
     }
 
     @Override
     public void cancelProcess(String processInstanceId, String reason) {
         log.info("Cancelling process: {} with reason: {}", processInstanceId, reason);
-        
+
         processRuntime.delete(
                 ProcessPayloadBuilder.delete()
                         .withProcessInstanceId(processInstanceId)
                         .withReason(reason)
-                        .build()
-        );
-        
+                        .build());
+
         log.info("Process cancelled: {}", processInstanceId);
     }
 
     @Override
     public ProcessInstanceDTO suspendProcess(String processInstanceId) {
         log.info("Suspending process: {}", processInstanceId);
-        
+
         ProcessInstance processInstance = processRuntime.suspend(
                 ProcessPayloadBuilder.suspend()
                         .withProcessInstanceId(processInstanceId)
-                        .build()
-        );
-        
+                        .build());
+
         log.info("Process suspended: {}", processInstanceId);
         return mapToDTO(processInstance);
     }
@@ -112,13 +107,12 @@ public class ProcessServiceImpl implements ProcessService {
     @Override
     public ProcessInstanceDTO activateProcess(String processInstanceId) {
         log.info("Activating process: {}", processInstanceId);
-        
+
         ProcessInstance processInstance = processRuntime.resume(
                 ProcessPayloadBuilder.resume()
                         .withProcessInstanceId(processInstanceId)
-                        .build()
-        );
-        
+                        .build());
+
         log.info("Process activated: {}", processInstanceId);
         return mapToDTO(processInstance);
     }
@@ -132,35 +126,35 @@ public class ProcessServiceImpl implements ProcessService {
     @Override
     public void setVariables(String processInstanceId, Map<String, Object> variables) {
         log.info("Setting {} variables on process: {}", variables.size(), processInstanceId);
-        
+
         processRuntime.setVariables(
                 ProcessPayloadBuilder.setVariables()
                         .withProcessInstanceId(processInstanceId)
                         .withVariables(variables)
-                        .build()
-        );
+                        .build());
     }
 
     @Override
     public void sendSignal(String processInstanceId, String signalName, Map<String, Object> variables) {
         log.info("Sending signal '{}' to process: {}", signalName, processInstanceId);
-        
+
         processRuntime.signal(
                 ProcessPayloadBuilder.signal()
                         .withName(signalName)
                         .withVariables(variables)
-                        .build()
-        );
+                        .build());
     }
 
     @Override
     public void sendMessage(String processInstanceId, String messageName, Map<String, Object> variables) {
         log.info("Sending message '{}' to process: {}", messageName, processInstanceId);
-        
-        runtimeService.createMessageCorrelation(messageName)
-                .processInstanceId(processInstanceId)
-                .setVariables(variables)
-                .correlate();
+
+        // runtimeService.createMessageCorrelation(messageName)
+        // .processInstanceId(processInstanceId)
+        // .setVariables(variables)
+        // .correlate();
+        throw new UnsupportedOperationException(
+                "Message correlation not supported in Activiti 8.0.0 without Cloud Streams");
     }
 
     /**
@@ -175,9 +169,10 @@ public class ProcessServiceImpl implements ProcessService {
                 .processDefinitionVersion(processInstance.getProcessDefinitionVersion())
                 .name(processInstance.getName())
                 .startUserId(processInstance.getInitiator())
-                .startTime(processInstance.getStartDate() != null ? 
-                        LocalDateTime.ofInstant(processInstance.getStartDate().toInstant(), 
-                                ZoneId.systemDefault()) : null)
+                .startTime(processInstance.getStartDate() != null
+                        ? LocalDateTime.ofInstant(processInstance.getStartDate().toInstant(),
+                                ZoneId.systemDefault())
+                        : null)
                 .status(mapStatus(processInstance.getStatus()))
                 .parentProcessInstanceId(processInstance.getParentId())
                 .build();
@@ -187,8 +182,9 @@ public class ProcessServiceImpl implements ProcessService {
      * Map Activiti process status to DTO status.
      */
     private ProcessInstanceDTO.ProcessStatus mapStatus(ProcessInstance.ProcessInstanceStatus status) {
-        if (status == null) return ProcessInstanceDTO.ProcessStatus.RUNNING;
-        
+        if (status == null)
+            return ProcessInstanceDTO.ProcessStatus.RUNNING;
+
         return switch (status) {
             case RUNNING -> ProcessInstanceDTO.ProcessStatus.RUNNING;
             case COMPLETED -> ProcessInstanceDTO.ProcessStatus.COMPLETED;
