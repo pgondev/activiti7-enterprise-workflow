@@ -45,7 +45,7 @@ export const processApi = {
         api.get(`/process-definitions/${id}/xml`),
 
     startProcess: (key: string, variables?: Record<string, unknown>) =>
-        api.post(`/process-definitions/key/${key}/start`, { variables }),
+        api.post(`/process-instances/key/${key}/start`, variables || {}),
 }
 
 // Deployments
@@ -79,6 +79,57 @@ export const instanceApi = {
 
     terminate: (id: string) =>
         api.delete(`/process-instances/${id}`),
+}
+
+// Decisions
+export const decisionApi = {
+    getDecisions: (params?: { page?: number; size?: number }) =>
+        api.get('/decisions', { params }),
+
+    getDecision: (id: string) =>
+        api.get(`/decisions/${id}`),
+
+    getDecisionXml: (id: string) =>
+        api.get(`/decisions/${id}/xml`),
+
+    deploy: (name: string, dmnXml: string) =>
+        api.post('/decisions/deploy', { name, dmnXml }),
+
+    delete: (deploymentId: string) =>
+        api.delete(`/decisions/deployments/${deploymentId}`),
+}
+
+// Health
+export const healthApi = {
+    // We use list endpoints as health checks since actuator might be restricted or on different path
+    checkWorkflow: () => api.get('/process-definitions?page=0&size=1'),
+    checkTasks: () => api.get('/tasks?page=0&size=1'),
+    checkForms: () => api.get('/forms?page=0&size=1'),
+    checkDecisions: () => api.get('/decisions?page=0&size=1'),
+}
+
+// Tasks
+export const taskApi = {
+    getTasks: (params?: { page?: number; size?: number; assignee?: string }) =>
+        api.get('/tasks', { params }),
+
+    getTask: (id: string) =>
+        api.get(`/tasks/${id}`),
+
+    claim: (id: string) =>
+        api.post(`/tasks/${id}/claim`),
+
+    complete: (id: string, variables?: Record<string, unknown>) =>
+        api.post(`/tasks/${id}/complete`, variables || {}),
+}
+
+// Forms
+export const formApi = {
+    getForms: (params?: { page?: number; size?: number }) =>
+        api.get('/forms', { params }),
+
+    getForm: (id: string) =>
+        api.get(`/forms/${id}`),
 }
 
 export default api

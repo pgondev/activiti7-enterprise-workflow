@@ -1,0 +1,7 @@
+server:
+  port: 8089
+spring:
+  application:
+    name: notification-service
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration

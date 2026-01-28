@@ -4,7 +4,7 @@ dependencies {
     implementation project(':libs:messaging-common')
     
     // Flowable CMMN (Activiti7 lacks native CMMN)
-    implementation 'org.flowable:flowable-cmmn-spring-boot-starter:7.0.1'
+    implementation 'org.flowable:flowable-spring-boot-starter-cmmn:7.0.0'
     
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

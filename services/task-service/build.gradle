@@ -4,7 +4,7 @@ dependencies {
     implementation project(':libs:messaging-common')
     
     // Activiti7 Engine (standalone)
-    implementation 'org.activiti:activiti-spring-boot-starter:7.1.0.M6'
+    implementation 'org.activiti:activiti-spring-boot-starter'
     
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

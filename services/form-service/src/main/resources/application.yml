@@ -35,9 +35,18 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
 
+# Activiti Configuration
+spring.activiti:
+  database-schema-update: true
+  history-level: full
+  async-executor-activate: true
+
 # Server
 server:
-  port: ${SERVER_PORT:8082}
+  port: ${SERVER_PORT:8084}
+  error:
+    include-message: always
+    include-stacktrace: always
 
 # Actuator
 management:

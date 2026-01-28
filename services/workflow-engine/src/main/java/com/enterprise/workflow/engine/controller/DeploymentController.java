@@ -48,18 +48,27 @@ public class DeploymentController {
     @PostMapping
     @Operation(summary = "Deploy a BPMN/DMN process")
     public ResponseEntity<Map<String, Object>> deploy(@RequestBody DeployRequest request) {
-        DeploymentBuilder builder = repositoryService.createDeployment()
-                .name(request.name != null ? request.name : "Deployment")
-                .addString(
-                        request.resourceName != null ? request.resourceName : "process.bpmn20.xml",
-                        request.bpmnXml);
+        try {
+            if (request.bpmnXml == null || request.bpmnXml.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "BPMN XML cannot be empty"));
+            }
 
-        Deployment deployment = builder.deploy();
+            DeploymentBuilder builder = repositoryService.createDeployment()
+                    .name(request.name != null ? request.name : "Deployment")
+                    .addString(
+                            request.resourceName != null ? request.resourceName : "process.bpmn20.xml",
+                            request.bpmnXml);
 
-        Map<String, Object> result = toDto(deployment);
-        result.put("message", "Deployment successful");
+            Deployment deployment = builder.deploy();
 
-        return ResponseEntity.ok(result);
+            Map<String, Object> result = toDto(deployment);
+            result.put("message", "Deployment successful");
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(Map.of("message", "Deployment failed: " + e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")

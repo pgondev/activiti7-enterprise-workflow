@@ -1,0 +1,7 @@
+description = 'History Service - Archival of process data'
+
+dependencies {
+    implementation project(':libs:common')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+}

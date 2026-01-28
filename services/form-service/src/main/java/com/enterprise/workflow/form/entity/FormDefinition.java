@@ -44,9 +44,8 @@ public class FormDefinition {
     @Column(nullable = false)
     private boolean published = false;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, Object> schema;
+    @Column(columnDefinition = "text")
+    private String schema;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

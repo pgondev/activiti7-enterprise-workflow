@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
+import { decisionApi } from '../api/client'
 import { Save, Download, Upload, Play } from 'lucide-react'
 import DmnJS from 'dmn-js/lib/Modeler'
 import 'dmn-js/dist/assets/diagram-js.css'
@@ -36,7 +37,52 @@ export default function DmnModeler() {
     const containerRef = useRef<HTMLDivElement>(null)
     const modelerRef = useRef<DmnJS | null>(null)
     const [decisionName, setDecisionName] = useState('New Decision Table')
+    const [decisionId, setDecisionId] = useState('decision_1')
     const [isDirty, setIsDirty] = useState(false)
+    const [deploying, setDeploying] = useState(false)
+    const navigate = useNavigate()
+
+    const updateDecisionId = (newId: string) => {
+        setDecisionId(newId)
+        if (!modelerRef.current) return
+
+        try {
+            const modeler = modelerRef.current as any
+            const definitions = modeler._definitions
+            if (definitions && definitions.drgElement) {
+                const decision = definitions.drgElement.find((e: any) => e.$type === 'dmn:Decision')
+                if (decision) {
+                    decision.id = newId
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to update decision ID', e)
+        }
+    }
+
+    const handleDeploy = async () => {
+        if (!modelerRef.current) return
+        setDeploying(true)
+        try {
+            // Ensure ID is synced before save
+            let { xml } = await modelerRef.current.saveXML({ format: true })
+
+            // Validate/Patch ID if needed
+            if (xml && decisionId && !xml.includes(`id="${decisionId}"`)) {
+                // xml = xml.replace(/<decision id="[^"]+"/, `<decision id="${decisionId}"`)
+            }
+
+            await decisionApi.deploy(decisionName, xml || '')
+            setIsDirty(false)
+            alert('Decision Deployed Successfully!')
+            setTimeout(() => navigate('/modeler/dmns'), 1000)
+        } catch (err: any) {
+            console.error(err)
+            alert('Deployment failed')
+        } finally {
+            setDeploying(false)
+        }
+    }
 
     useEffect(() => {
         if (!containerRef.current) return
@@ -46,14 +92,67 @@ export default function DmnModeler() {
         })
 
         modelerRef.current = modeler
+        let isCancelled = false
 
-        modeler.importXML(defaultDmn).catch(console.error)
+        const loadDiagram = async () => {
+            try {
+                let xml = defaultDmn
+                let name = 'New Decision Table'
 
-        modeler.on('commandStack.changed', () => {
+                if (id) {
+                    try {
+                        const res = await decisionApi.getDecisionXml(id)
+                        const fetchedXml = res.data
+                        if (typeof fetchedXml === 'string' && fetchedXml.trim().length > 0) {
+                            xml = fetchedXml
+                            // Fetch name
+                            try {
+                                const details = await decisionApi.getDecision(id)
+                                name = details.data.name || details.data.key
+                            } catch (e) {
+                                console.warn(e)
+                            }
+                        } else {
+                            throw new Error('Empty XML')
+                        }
+                    } catch (e) {
+                        console.error('Failed to load DMN', e)
+                        alert('Failed to load DMN definition')
+                        return
+                    }
+                }
+
+                if (isCancelled) return
+                await modeler.importXML(xml)
+
+                if (isCancelled) return
+                if (id) setDecisionName(name)
+
+                // Extract ID
+                try {
+                    const mod = modeler as any
+                    if (mod._definitions && mod._definitions.drgElement) {
+                        const dec = mod._definitions.drgElement.find((e: any) => e.$type === 'dmn:Decision')
+                        if (dec) setDecisionId(dec.id)
+                    }
+                } catch (e) { }
+
+            } catch (err) {
+                if (!isCancelled) {
+                    console.error('DMN Import Error:', err)
+                    alert('Failed to render DMN')
+                }
+            }
+        }
+
+        loadDiagram()
+
+        modeler.on('views.changed', () => {
             setIsDirty(true)
         })
 
         return () => {
+            isCancelled = true
             modeler.destroy()
         }
     }, [id])
@@ -94,13 +193,27 @@ export default function DmnModeler() {
             {/* Toolbar */}
             <div className="h-14 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4">
                 <div className="flex items-center gap-4">
-                    <input
-                        type="text"
-                        value={decisionName}
-                        onChange={(e) => setDecisionName(e.target.value)}
-                        className="bg-transparent text-white font-semibold text-lg focus:outline-none focus:border-b-2 focus:border-indigo-500"
-                    />
-                    {isDirty && <span className="text-yellow-400 text-sm">• Unsaved changes</span>}
+                    <div className="flex flex-col">
+                        <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Name</label>
+                        <input
+                            type="text"
+                            value={decisionName}
+                            onChange={(e) => setDecisionName(e.target.value)}
+                            className="bg-transparent text-white font-semibold text-lg focus:outline-none focus:border-b focus:border-indigo-500 w-48"
+                            placeholder="Decision Name"
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Key (ID)</label>
+                        <input
+                            type="text"
+                            value={decisionId}
+                            onChange={(e) => updateDecisionId(e.target.value)}
+                            className="bg-transparent text-slate-300 font-mono text-sm focus:outline-none focus:border-b focus:border-indigo-500 w-32"
+                            placeholder="decision_id"
+                        />
+                    </div>
+                    {isDirty && <span className="text-yellow-400 text-sm">• Unsaved</span>}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -121,16 +234,19 @@ export default function DmnModeler() {
                     <button
                         onClick={handleSave}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-lg shadow-indigo-600/30"
+                        title="Download XML file"
                     >
                         <Save size={18} />
-                        <span className="text-sm font-medium">Save</span>
+                        <span className="text-sm font-medium">Download</span>
                     </button>
 
                     <button
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-lg shadow-green-600/30"
+                        onClick={handleDeploy}
+                        disabled={deploying}
+                        className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors shadow-lg ${deploying ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700 shadow-green-600/30'}`}
                     >
-                        <Play size={18} />
-                        <span className="text-sm font-medium">Deploy</span>
+                        <Play size={18} className={deploying ? 'animate-pulse' : ''} />
+                        <span className="text-sm font-medium">{deploying ? 'Deploying...' : 'Deploy'}</span>
                     </button>
                 </div>
             </div>

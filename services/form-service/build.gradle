@@ -3,8 +3,8 @@ description = 'Dynamic Form Management Service'
 dependencies {
     implementation project(':libs:messaging-common')
     
-    // Activiti7 Engine (standalone)
-    implementation 'org.activiti:activiti-spring-boot-starter:7.1.0.M6'
+    // Activiti Engine (managed by root BOM)
+    implementation 'org.activiti:activiti-spring-boot-starter'
     
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -20,4 +20,10 @@ dependencies {
     
     // Testing
     testImplementation 'org.testcontainers:postgresql'
+
+    // Validation
+    implementation 'com.networknt:json-schema-validator:1.0.87'
+
+    // Service Communication
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 }

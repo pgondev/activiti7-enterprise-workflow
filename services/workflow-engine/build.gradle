@@ -3,8 +3,8 @@ description = 'BPMN 2.0 Process Execution Engine - Core workflow runtime based o
 dependencies {
     implementation project(':libs:messaging-common')
     
-    // Activiti7 Engine
-    implementation 'org.activiti:activiti-spring-boot-starter:7.1.0.M6'
+    // Activiti Engine (managed by root BOM)
+    implementation 'org.activiti:activiti-spring-boot-starter'
     
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -18,7 +18,20 @@ dependencies {
     // API Documentation
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
     
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.h2database:h2'
+    
     // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:rabbitmq'
+}
+
+test {
+    testLogging {
+        showStandardStreams = true
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
 }

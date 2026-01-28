@@ -29,8 +29,8 @@ configure(subprojects.findAll { it.path.startsWith(':libs:') }) {
     tasks.named('jar') { enabled = true }
 
     java {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     ext {
@@ -64,8 +64,8 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
     apply plugin: 'com.google.cloud.tools.jib'
 
     java {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     ext {
@@ -180,8 +180,8 @@ configure(subprojects.findAll { it.path.startsWith(':connectors:') }) {
     tasks.named('jar') { enabled = true }
 
     java {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     dependencies {

@@ -7,10 +7,11 @@ spring:
     enabled: false
 
   # Database
+  # Database
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:workflowdb}
-    username: ${DB_USERNAME:workflow}
-    password: ${DB_PASSWORD:workflow123}
+    url: jdbc:h2:mem:workflowenginedb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
     hikari:
       maximum-pool-size: 10
 
@@ -20,7 +21,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
 
   # RabbitMQ
@@ -38,7 +39,7 @@ spring:
 # Activiti Configuration
 spring.activiti:
   database-schema-update: true
-  history-level: full
+  history-level: none
   async-executor-activate: true
   check-process-definitions: true
 

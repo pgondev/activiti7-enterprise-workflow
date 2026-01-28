@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://www.activiti.org/processdef">
+
+    <process id="InvoiceProcess_1" name="Invoice Approval Process" isExecutable="true">
+        <startEvent id="startEvent" name="Start">
+            <outgoing>flow1</outgoing>
+        </startEvent>
+        <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="userTask" />
+        
+        <userTask id="userTask" name="Approve Invoice">
+            <incoming>flow1</incoming>
+            <outgoing>flow2</outgoing>
+        </userTask>
+        <sequenceFlow id="flow2" sourceRef="userTask" targetRef="endEvent" />
+        
+        <endEvent id="endEvent" name="End">
+            <incoming>flow2</incoming>
+        </endEvent>
+    </process>
+
+    <bpmndi:BPMNDiagram id="BPMNDiagram_InvoiceProcess_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_InvoiceProcess_1" bpmnElement="InvoiceProcess_1">
+            <bpmndi:BPMNShape id="startEvent_di" bpmnElement="startEvent">
+                <omgdc:Bounds x="150" y="150" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <omgdc:Bounds x="157" y="193" width="24" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="userTask_di" bpmnElement="userTask">
+                <omgdc:Bounds x="240" y="128" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="endEvent_di" bpmnElement="endEvent">
+                <omgdc:Bounds x="392" y="150" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <omgdc:Bounds x="400" y="193" width="20" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="flow1_di" bpmnElement="flow1">
+                <omgdi:waypoint x="186" y="168" />
+                <omgdi:waypoint x="240" y="168" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="flow2_di" bpmnElement="flow2">
+                <omgdi:waypoint x="340" y="168" />
+                <omgdi:waypoint x="392" y="168" />
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+
+</definitions>

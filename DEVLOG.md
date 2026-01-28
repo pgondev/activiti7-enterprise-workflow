@@ -94,6 +94,108 @@ Enterprise-grade workflow automation platform based on **Activiti7 Cloud** with 
 
 ---
 
+## Session Log: 2026-01-25
+
+### 08:36 - Architecture Review (4 min)
+- Reviewed `ARCHITECTURE.md` against 14 implemented services
+- Validated service ports and responsibilities
+- Confirmed discrepancies between documented ports and `start-all.bat` (Port 8083 vs 8081 for Task Service)
+
+### 08:44 - Build System Fixes (10 min)
+- **Resolved Build Failure**: `StackOverflowError` in Gradle parallel execution
+- **Root Cause**: Circular BOM dependency between `spring-cloud-dependencies` and `activiti-cloud-dependencies`
+- **Fix**: Updated `gradle.properties` with `-Xss4m` and `javaVersion=21`
+- **Cleanup**: Cleared corrupted Gradle cache for Activiti libraries
+
+### 09:05 - Project Cleanup (5 min)
+- Removed 32MB of debris (old logs, zip files, redundant scripts)
+- Preserved `stop-all.bat` and `start-all.bat`
+- Updated `start-all.bat` to exclude 9 scaffolded services, starting only fully implemented ones
+
+### 09:10 - Runtime Verification (6 min)
+- Successfully launched 5 core services:
+    - **Workflow Engine** (8080) - UP
+    - **Task Service** (8083) - UP
+    - **Form Service** (8084) - Initializing
+    - **Decision Engine** (8085) - Initializing
+    - **Decision Engine** (8085) - Initializing
+    - **Reporting Service** (8091) - Initializing
+
+### 09:35 - UI Fixes (2 min)
+- **Problem**: Modeler UI Form Designer was empty (no drag-and-drop components).
+- **Cause**: `FormModeler.tsx` had restrictive configuration disabling all component categories.
+- **Fix**: Updated configuration to enable `basic`, `advanced`, `layout`, and `data` component categories.
+
+### 09:59 - Enhancements (2 min)
+- **Feature**: Added "Admin Console" link to Modeler UI.
+- **Changes**: 
+    - Added Sidebar navigation item (External Link to port 3002).
+    - Added Quick Action card on Dashboard.
+
+### 10:20 - Fix: Form Deployment (500 Error) (10 min)
+- **Problem**: Deployment failed with 500 Error (Internal Server Error) due to JSON mapping issues in Hibernate 6/Postgres.
+- **Solution**: Refactored `FormDefinition` entity to store schema as `TEXT` string instead of `JSONB` properties. Initialized manual JSON serialization in `FormDefinitionServiceImpl` to bypass Hibernate mapping complexity.
+
+### 10:35 - Feature: Form List UI (5 min)
+- **Feature**: Implemented "View Saved Forms" page.
+- **Changes**:
+    - Created `FormList.tsx`.
+    - Updated Routing (`/modeler/forms`).
+    - Updated Sidebar Navigation.
+
+### 10:45 - Feature: Camunda-Style BPMN Modeler (10 min)
+- **Feature**: Enhanced BPMN Modeler to support Edit/Delete/Version capabilities like Camunda.
+- **Changes**:
+    - **Backend**: Added `GET /api/v1/process-definitions/{id}/xml` to `ProcessDefinitionController`.
+    - **UI**: Added "Edit" and "Delete" buttons to `ProcessList`.
+    - **UI**: Added "Edit" and "Delete" buttons to `ProcessList`.
+    - **UI**: Updated `BpmnModeler` to fetch and load existing XML when `id` is present.
+
+### 10:55 - Feature: DMN Modeler Standardization (10 min)
+- **Feature**: Aligned DMN Modeler with Camunda design patterns (List -> Edit -> Deploy).
+- **Changes**:
+    - **UI**: Created `DmnList.tsx` to list and manage decision tables.
+    - **UI**: Updated `DmnModeler.tsx` `handleDeploy` and XML loading logic.
+    - **UI**: Updated `client.ts` with `decisionApi`.
+    - **UI**: Updated `client.ts` with `decisionApi`.
+    - **UI**: Updated Routing and Sidebar to point to the new List view.
+
+### 11:00 - Fix: Modeler & Gateway Troubleshooting (10 min)
+- **Problem**: `GET /api/v1/decisions` returning 404. Deployments returning 500. Modelers crashing on empty XML.
+- **Root Cause**:
+    - **404**: Missing proxy in `vite.config.ts` for `decision-service` (8085).
+    - **Crash**: Modelers attempted to `importXML(undefined)` when backend returned empty response or error.
+    - **500**: `DeploymentController` lacked exception handling, masking the real error during deployment.
+- **Fixes**:
+    - **Vite**: Added proxy for `/api/v1/decisions` -> `http://localhost:8085`.
+    - **UI**: Added XML validation checks in `BpmnModeler.tsx` and `DmnModeler.tsx`.
+    - **Backend**: Wrapped `DeploymentController.deploy` in try-catch to return 400/500 with error message.
+
+### 11:10 - UI: Polished Modeler Actions (10 min)
+- **Problem**: User confusion regarding "Saved Models" not appearing in lists.
+- **Root Cause**: "Save" button in BPMN/DMN modelers was actually "Download to Disk", not "Save to Backend". Only "Deploy" saved to backend.
+- **Fixes**:
+    - **UI**: Renamed "Save" button to "Download" in `BpmnModeler` and `DmnModeler`.
+    - **UI**: Renamed "Save" button to "Download" in `BpmnModeler` and `DmnModeler`.
+    - **UI**: Added tooltips to clarify actions.
+
+### 11:35 - Fix: Modeler Stability (10 min)
+- **Problem**: React Strict Mode caused race conditions in `bpmn-js` / `dmn-js` initialization (`root-0` error or crashes on "New Process").
+- **Fixes**:
+    - **UI**: Refactored `BpmnModeler.tsx` to handle async imports and component unmounting gracefully.
+    - **UI**: Refactored `BpmnModeler.tsx` to handle async imports and component unmounting gracefully.
+    - **UI**: Applied similar stability fix to `DmnModeler.tsx`.
+
+### 11:45 - Feature: Process Key Management (10 min)
+- **Problem**: User reported "only one process showing" after deploying multiple times.
+- **Root Cause**: `modeler-ui` defaulted all new processes to `id="Process_1"`. Activiti Engine treats same-ID deployments as *new versions* of the same process, not new processes.
+- **Fix**:
+    - **UI**: Added "Key (ID)" input field in `BpmnModeler` toolbar.
+    - **UI**: Implemented logic to sync Key with the BPMN `<process id="...">` attribute.
+    - **Result**: Users can now create distinct processes by changing the Key.
+
+---
+
 ## Current Project Structure
 
 ```

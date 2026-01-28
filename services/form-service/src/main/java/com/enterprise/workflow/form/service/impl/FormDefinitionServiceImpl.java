@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -29,17 +30,27 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
 
     private final FormDefinitionRepository formRepository;
     private final FormSubmissionRepository submissionRepository;
+    private final com.enterprise.workflow.form.service.JsonSchemaValidatorService validatorService;
+    private final com.enterprise.workflow.form.client.TaskServiceClient taskClient;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @Override
     public FormDefinitionResponse createForm(CreateFormRequest request) {
-        log.debug("Creating form with key: {}", request.getKey());
+        log.debug("Creating new form: {}", request.getName());
+
+        String schemaJson;
+        try {
+            schemaJson = objectMapper.writeValueAsString(request.getSchema());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid form schema JSON", e);
+        }
         
         FormDefinition form = FormDefinition.builder()
                 .key(request.getKey())
                 .name(request.getName())
                 .description(request.getDescription())
                 .category(request.getCategory())
-                .schema(request.getSchema())
+                .schema(schemaJson)
                 .version(1)
                 .published(false)
                 .createdBy(getCurrentUser())
@@ -53,7 +64,7 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
     @Transactional(readOnly = true)
     public Page<FormDefinitionResponse> getForms(String name, String category, Pageable pageable) {
         Page<FormDefinition> page;
-        
+
         if (name != null && category != null) {
             page = formRepository.findByNameContainingIgnoreCaseAndCategory(name, category, pageable);
         } else if (name != null) {
@@ -63,7 +74,7 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
         } else {
             page = formRepository.findAll(pageable);
         }
-        
+
         return page.map(this::mapToResponse);
     }
 
@@ -94,15 +105,24 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
     @Override
     public FormDefinitionResponse updateForm(String formId, UpdateFormRequest request) {
         log.debug("Updating form: {}", formId);
-        
+
         FormDefinition form = formRepository.findById(formId)
                 .orElseThrow(() -> new RuntimeException("Form not found: " + formId));
-        
-        if (request.getName() != null) form.setName(request.getName());
-        if (request.getDescription() != null) form.setDescription(request.getDescription());
-        if (request.getCategory() != null) form.setCategory(request.getCategory());
-        if (request.getSchema() != null) form.setSchema(request.getSchema());
-        
+
+        if (request.getName() != null)
+            form.setName(request.getName());
+        if (request.getDescription() != null)
+            form.setDescription(request.getDescription());
+        if (request.getCategory() != null)
+            form.setCategory(request.getCategory());
+        if (request.getSchema() != null) {
+            try {
+                form.setSchema(objectMapper.writeValueAsString(request.getSchema()));
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid form schema JSON", e);
+            }
+        }
+
         form = formRepository.save(form);
         return mapToResponse(form);
     }
@@ -118,26 +138,36 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
     public List<FormVersionResponse> getFormVersions(String formId) {
         FormDefinition form = formRepository.findById(formId)
                 .orElseThrow(() -> new RuntimeException("Form not found: " + formId));
-        
+
         return formRepository.findByKeyOrderByVersionDesc(form.getKey()).stream()
-                .map(f -> FormVersionResponse.builder()
+                .map(f -> {
+                    Map<String, Object> schemaMap = null;
+                    try {
+                        if (f.getSchema() != null) {
+                            schemaMap = objectMapper.readValue(f.getSchema(), Map.class);
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to parse schema for version {}", f.getVersion(), e);
+                    }
+                    return FormVersionResponse.builder()
                         .id(f.getId())
                         .formId(formId)
                         .version(f.getVersion())
-                        .schema(f.getSchema())
+                        .schema(schemaMap)
                         .createdAt(f.getCreatedAt())
                         .createdBy(f.getCreatedBy())
-                        .build())
+                        .build();
+                })
                 .collect(Collectors.toList());
     }
 
     @Override
     public FormDefinitionResponse publishForm(String formId) {
         log.debug("Publishing form: {}", formId);
-        
+
         FormDefinition form = formRepository.findById(formId)
                 .orElseThrow(() -> new RuntimeException("Form not found: " + formId));
-        
+
         // Create new version
         FormDefinition newVersion = FormDefinition.builder()
                 .key(form.getKey())
@@ -149,7 +179,7 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
                 .published(true)
                 .createdBy(getCurrentUser())
                 .build();
-        
+
         newVersion = formRepository.save(newVersion);
         return mapToResponse(newVersion);
     }
@@ -157,10 +187,10 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
     @Override
     public FormSubmissionResponse submitForm(String formId, FormSubmissionRequest request) {
         log.debug("Submitting form: {}", formId);
-        
+
         FormDefinition form = formRepository.findById(formId)
                 .orElseThrow(() -> new RuntimeException("Form not found: " + formId));
-        
+
         FormSubmission submission = FormSubmission.builder()
                 .formId(formId)
                 .formVersion(form.getVersion())
@@ -169,7 +199,13 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
                 .taskId(request.getTaskId())
                 .submittedBy(getCurrentUser())
                 .build();
-        
+
+        // Validate before submission
+        var validationResponse = validateForm(formId, request);
+        if (!validationResponse.isValid()) {
+            throw new IllegalArgumentException("Form validation failed: " + validationResponse.getErrors());
+        }
+
         submission = submissionRepository.save(submission);
         return mapSubmissionToResponse(submission);
     }
@@ -194,12 +230,16 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
         // Basic validation - can be extended with form.io validation logic
         FormDefinition form = formRepository.findById(formId)
                 .orElseThrow(() -> new RuntimeException("Form not found: " + formId));
-        
-        List<FormValidationResponse.FieldError> errors = new ArrayList<>();
-        
-        // Validate required fields based on schema
-        // This is a placeholder - real implementation would parse form.io schema
-        
+
+        Map<String, Object> schemaMap;
+        try {
+            schemaMap = objectMapper.readValue(form.getSchema(), Map.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid stored schema JSON for form: " + formId, e);
+        }
+
+        List<FormValidationResponse.FieldError> errors = validatorService.validate(schemaMap, request.getData());
+
         return FormValidationResponse.builder()
                 .valid(errors.isEmpty())
                 .errors(errors)
@@ -216,11 +256,35 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
     @Override
     @Transactional(readOnly = true)
     public FormDefinitionResponse getFormForTask(String taskId) {
-        // TODO: Integrate with task service to get form key
-        throw new UnsupportedOperationException("Task form lookup not yet implemented");
+        log.debug("Looking up form for task: {}", taskId);
+        try {
+            Map<String, Object> task = taskClient.getTask(taskId);
+            if (task == null) {
+                throw new RuntimeException("Task not found: " + taskId);
+            }
+
+            String formKey = (String) task.get("formKey");
+            if (formKey == null || formKey.isEmpty()) {
+                throw new RuntimeException("No form key defined for task: " + taskId);
+            }
+
+            return getLatestFormByKey(formKey);
+        } catch (Exception e) {
+            log.error("Error fetching form for task {}", taskId, e);
+            throw new RuntimeException("Failed to retrieve form for task: " + taskId, e);
+        }
     }
 
     private FormDefinitionResponse mapToResponse(FormDefinition form) {
+        Map<String, Object> schemaMap = null;
+        try {
+            if (form.getSchema() != null) {
+                schemaMap = objectMapper.readValue(form.getSchema(), Map.class);
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse form schema JSON for form {}", form.getId(), e);
+        }
+
         return FormDefinitionResponse.builder()
                 .id(form.getId())
                 .key(form.getKey())
@@ -228,8 +292,8 @@ public class FormDefinitionServiceImpl implements FormDefinitionService {
                 .description(form.getDescription())
                 .category(form.getCategory())
                 .version(form.getVersion())
+                .schema(schemaMap)
                 .published(form.isPublished())
-                .schema(form.getSchema())
                 .createdAt(form.getCreatedAt())
                 .updatedAt(form.getUpdatedAt())
                 .createdBy(form.getCreatedBy())

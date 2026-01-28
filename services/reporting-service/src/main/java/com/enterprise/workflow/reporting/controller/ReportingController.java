@@ -1,6 +1,6 @@
 package com.enterprise.workflow.reporting.controller;
 
-import com.enterprise.workflow.reporting.dto.*;
+import static com.enterprise.workflow.reporting.dto.ReportingDTOs.*;
 import com.enterprise.workflow.reporting.service.DashboardService;
 import com.enterprise.workflow.reporting.service.ReportExportService;
 import io.swagger.v3.oas.annotations.Operation;

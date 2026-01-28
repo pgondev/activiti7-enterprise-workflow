@@ -1,0 +1,12 @@
+server:
+  port: 8093
+spring:
+  application:
+    name: case-engine
+
+  # CMMN configuration
+  activiti:
+    cloud:
+      services:
+        case-connector:
+          enabled: true

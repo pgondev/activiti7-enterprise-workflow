@@ -1,0 +1,12 @@
+description = 'Audit Service - Event logging and compliance'
+
+dependencies {
+    implementation project(':libs:messaging-common')
+    
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    
+    // Testing
+    testImplementation 'org.testcontainers:postgresql'
+}

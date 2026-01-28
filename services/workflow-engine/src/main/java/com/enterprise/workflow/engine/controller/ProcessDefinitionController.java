@@ -6,7 +6,9 @@ import org.activiti.engine.RepositoryService;
 import org.activiti.engine.repository.ProcessDefinition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.http.MediaType;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +59,29 @@ public class ProcessDefinitionController {
         return ResponseEntity.ok(toDto(definition));
     }
 
+    @GetMapping(value = "/{id}/xml", produces = MediaType.APPLICATION_XML_VALUE)
+    @Operation(summary = "Get process definition XML")
+    public ResponseEntity<String> getDefinitionXml(@PathVariable String id) {
+        try {
+            ProcessDefinition definition = repositoryService.createProcessDefinitionQuery()
+                    .processDefinitionId(id)
+                    .singleResult();
+
+            if (definition == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            try (InputStream resourceStream = repositoryService.getResourceAsStream(
+                    definition.getDeploymentId(), 
+                    definition.getResourceName())) {
+                String xml = new String(resourceStream.readAllBytes(), StandardCharsets.UTF_8);
+                return ResponseEntity.ok(xml);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/key/{key}")
     @Operation(summary = "Get latest process definition by key")
     public ResponseEntity<Map<String, Object>> getDefinitionByKey(@PathVariable String key) {
@@ -75,7 +100,7 @@ public class ProcessDefinitionController {
     @GetMapping("/count")
     @Operation(summary = "Get count of process definitions")
     public ResponseEntity<Map<String, Long>> countDefinitions() {
-        long count = repositoryService.createProcessDefinitionQuery().count();
+        long count = repositoryService.createProcessDefinitionQuery().latestVersion().count();
         Map<String, Long> result = new HashMap<>();
         result.put("count", count);
         return ResponseEntity.ok(result);

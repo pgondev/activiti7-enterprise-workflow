@@ -1,0 +1,7 @@
+description = 'Connector Service - Integrates with external systems'
+
+dependencies {
+    implementation project(':libs:messaging-common')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+}

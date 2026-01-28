@@ -78,8 +78,14 @@ activiti7-enterprise-workflow/
 
 ## 🚀 Quick Start
 
-### 1. Start Infrastructure
+### 1. Start Infrastructure & Services
+You can use the provided batch script to start everything at once:
 
+```batch
+start-all.bat
+```
+
+Or manually:
 ```bash
 docker-compose up -d
 ```
@@ -116,15 +122,23 @@ npm install
 npm run dev
 ```
 
+### 5. Stop All Services
+To stop all running services and containers:
+
+```batch
+stop-all.bat
+```
+
 
 ## 🔗 Access Links
 
 ### Frontend Applications
 | Application | URL | Description | Login (Dev) |
 |-------------|-----|-------------|-------------|
-| **Modeler UI** | http://localhost:3000 | BPMN/DMN Designer | N/A |
+| **Modeler UI** | http://localhost:3000 | BPMN/DMN Designer & Form Builder | N/A |
 | **Tasklist UI** | http://localhost:3001 | User Task Inbox | N/A |
 | **Admin UI** | http://localhost:3002 | Platform Admin | N/A |
+| **Forms UI** | http://localhost:3003 | Public Forms | N/A |
 
 ### Backend Services
 | Service | API URL | Swagger UI | Port |

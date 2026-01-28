@@ -88,6 +88,30 @@ public class ProcessInstanceController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/{id}/variables")
+    @Operation(summary = "Get variables for a process instance")
+    public ResponseEntity<Map<String, Object>> getVariables(@PathVariable String id) {
+        if (runtimeService.createProcessInstanceQuery().processInstanceId(id).singleResult() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Map<String, Object> variables = runtimeService.getVariables(id);
+        return ResponseEntity.ok(variables);
+    }
+
+    @PostMapping("/{id}/suspend")
+    @Operation(summary = "Suspend a process instance")
+    public ResponseEntity<Void> suspendInstance(@PathVariable String id) {
+        runtimeService.suspendProcessInstanceById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/activate")
+    @Operation(summary = "Activate a process instance")
+    public ResponseEntity<Void> activateInstance(@PathVariable String id) {
+        runtimeService.activateProcessInstanceById(id);
+        return ResponseEntity.ok().build();
+    }
+
     private Map<String, Object> toDto(ProcessInstance instance) {
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", instance.getId());
@@ -96,6 +120,8 @@ public class ProcessInstanceController {
         dto.put("businessKey", instance.getBusinessKey());
         dto.put("suspended", instance.isSuspended());
         dto.put("ended", instance.isEnded());
+        dto.put("startTime", instance.getStartTime());
+        dto.put("startUserId", instance.getStartUserId());
         return dto;
     }
 }

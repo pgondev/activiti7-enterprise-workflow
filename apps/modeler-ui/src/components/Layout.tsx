@@ -1,12 +1,16 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, FileCode, Table2, Settings, Menu } from 'lucide-react'
+import { Home, FileCode, Table2, Settings, Menu, Activity, List } from 'lucide-react'
 import { useState } from 'react'
 
 const navItems = [
     { path: '/', icon: Home, label: 'Dashboard' },
     { path: '/processes', icon: FileCode, label: 'Processes' },
+    { path: '/modeler/instances', icon: Activity, label: 'Instances' },
+    { path: '/modeler/tasks', icon: List, label: 'Tasks' },
     { path: '/modeler/bpmn', icon: FileCode, label: 'BPMN Modeler' },
-    { path: '/modeler/dmn', icon: Table2, label: 'DMN Modeler' },
+    { path: '/modeler/dmns', icon: Table2, label: 'DMN Modeler' },
+    { path: '/modeler/forms', icon: Table2, label: 'Form Designer' },
+    { path: 'http://localhost:3002', icon: Settings, label: 'Admin Console', external: true },
 ]
 
 export default function Layout() {
@@ -38,13 +42,28 @@ export default function Layout() {
                 <nav className="flex-1 py-4">
                     {navItems.map((item) => {
                         const isActive = location.pathname === item.path
+                        if (item.external) {
+                            return (
+                                <a
+                                    key={item.path}
+                                    href={item.path}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 text-slate-400 hover:bg-slate-700 hover:text-white"
+                                >
+                                    <item.icon size={20} />
+                                    {sidebarOpen && <span className="font-medium">{item.label}</span>}
+                                </a>
+                            )
+                        }
+
                         return (
                             <Link
                                 key={item.path}
                                 to={item.path}
                                 className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${isActive
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                        : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                    : 'text-slate-400 hover:bg-slate-700 hover:text-white'
                                     }`}
                             >
                                 <item.icon size={20} />

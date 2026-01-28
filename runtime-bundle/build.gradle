@@ -51,6 +51,7 @@ dependencies {
     
     // Database
     runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.h2database:h2'
     implementation "org.flywaydb:flyway-core:${flywayVersion}"
     
     // Messaging
@@ -60,6 +61,7 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     
     // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:rabbitmq'
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Plus, FileCode2, Table2, MoreVertical, Play, RefreshCw } from 'lucide-react'
-import { processApi, instanceApi } from '../api/client'
+import { Search, Plus, FileCode2, MoreVertical, Play, RefreshCw } from 'lucide-react'
+import { processApi, deploymentApi } from '../api/client'
 
 interface ProcessDefinition {
     id: string
@@ -46,11 +46,22 @@ export default function ProcessList() {
 
     const handleStartProcess = async (processKey: string) => {
         try {
-            await instanceApi.startProcess(processKey, {})
+            await processApi.startProcess(processKey, {})
             alert(`Process ${processKey} started successfully!`)
         } catch (err) {
             console.error('Failed to start process:', err)
             alert('Failed to start process')
+        }
+    }
+
+    const handleDelete = async (deploymentId: string) => {
+        if (!confirm('Are you sure you want to delete this process definition? This will delete the deployment.')) return
+        try {
+            await deploymentApi.delete(deploymentId)
+            fetchProcesses()
+        } catch (err: any) {
+            console.error('Failed to delete deployment:', err)
+            alert('Failed to delete deployment')
         }
     }
 
@@ -79,7 +90,7 @@ export default function ProcessList() {
                         Refresh
                     </button>
                     <Link
-                        to="/bpmn/new"
+                        to="/modeler/bpmn"
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
                         <Plus size={18} />
@@ -115,8 +126,8 @@ export default function ProcessList() {
                             key={type}
                             onClick={() => setTypeFilter(type)}
                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${typeFilter === type
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-slate-400 hover:text-white'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-slate-400 hover:text-white'
                                 }`}
                         >
                             {type.toUpperCase()}
@@ -153,9 +164,17 @@ export default function ProcessList() {
                                     >
                                         <Play size={16} />
                                     </button>
+                                    <Link
+                                        to={`/modeler/bpmn/${process.id}`}
+                                        className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-blue-400 transition-colors"
+                                        title="Edit Process"
+                                    >
+                                        <FileCode2 size={16} />
+                                    </Link>
                                     <button
-                                        className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
-                                        title="More options"
+                                        className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400 transition-colors"
+                                        title="Delete"
+                                        onClick={() => handleDelete(process.deploymentId)}
                                     >
                                         <MoreVertical size={16} />
                                     </button>
