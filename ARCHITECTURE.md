@@ -1,7 +1,7 @@
 # Architecture Diagram
 
-> **Last Updated**: 2026-01-24 12:56  
-> **Version**: 1.1
+> **Last Updated**: 2026-02-01 19:15  
+> **Version**: 1.2
 
 ## System Architecture
 
@@ -59,12 +59,12 @@
                                  │  │   FORM SERVICE        │  │   │  ┌─────────────┐  │
                                  │  │   (form.io)           │  │   │  │ Elasticsearch│  │
                                  │  │   Port: 8084          │  │   │  │ (Alternate) │  │
-                                 │  └───────────────────────┘  │   │  │             │  │
-                                 │                             │   │  │  • Full-text│  │
-                                 │  ┌───────────────────────┐  │   │  │  • Analytics│  │
-                                 │  │   QUERY SERVICE       │  │   │  └─────────────┘  │
-                                 │  │   (Read Queries)      │  │   │                   │
-                                 │  │   Port: 8081          │  │   └───────────────────┘
+                                 │  │                       │  │   │  │             │  │
+                                 │  │  • Form Builder       │  │   │  │  • Full-text│  │
+                                 │  │  • Form Renderer      │  │   │  │  • Analytics│  │
+                                 │  │  • App Bundles★       │  │   │  └─────────────┘  │
+                                 │  │    (BPMN+Forms+DMN)   │  │   │                   │
+                                 │  └───────────────────────┘  │   └───────────────────┘
                                  │  └───────────────────────┘  │
                                  │                             │
                                  │  ┌───────────────────────┐  │
@@ -358,7 +358,7 @@ identity:
 | query-service | 8081 | Read-optimized queries |
 | audit-service | 8082 | Event logging |
 | task-service | 8083 | User task management |
-| form-service | 8084 | Form.io forms |
+| form-service | 8084 | Form.io forms + App bundles |
 | decision-engine | 8085 | DMN decisions |
 | case-engine | 8086 | CMMN cases |
 | content-service | 8087 | Documents |
