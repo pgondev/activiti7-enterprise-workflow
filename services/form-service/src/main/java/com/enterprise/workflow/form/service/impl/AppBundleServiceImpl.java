@@ -411,7 +411,9 @@ public class AppBundleServiceImpl implements AppBundleService {
                         var form = formDefinitionService.getLatestFormByKey(formKey);
                         ZipEntry formEntry = new ZipEntry("forms/" + formKey + ".json");
                         zos.putNextEntry(formEntry);
-                        zos.write(form.getSchema().getBytes());
+                        // Convert form schema Map to JSON bytes
+                        String schemaJson = objectMapper.writeValueAsString(form.getSchema());
+                        zos.write(schemaJson.getBytes());
                         zos.closeEntry();
                     } catch (Exception e) {
                         log.warn("Could not add form: {}", formKey, e);
