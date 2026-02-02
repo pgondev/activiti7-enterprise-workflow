@@ -182,7 +182,7 @@ export default function BpmnModeler() {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `${processName.toLowerCase().replace(/\s+/g, '-')}.bpmn`
+        a.download = `${processName.toLowerCase().replace(/\s+/g, '-')}.bpmn20.xml`
         a.click()
         URL.revokeObjectURL(url)
         setIsDirty(false)
@@ -236,7 +236,7 @@ export default function BpmnModeler() {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `${processName.toLowerCase().replace(/\s+/g, '-')}.bpmn`
+        a.download = `${processName.toLowerCase().replace(/\s+/g, '-')}.bpmn20.xml`
         a.click()
         URL.revokeObjectURL(url)
     }
