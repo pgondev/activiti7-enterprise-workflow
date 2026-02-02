@@ -5,6 +5,10 @@ import BpmnJS from 'bpmn-js/lib/Modeler'
 import 'bpmn-js/dist/assets/diagram-js.css'
 import 'bpmn-js/dist/assets/bpmn-js.css'
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css'
+import '@bpmn-io/properties-panel/dist/assets/properties-panel.css'
+import { BpmnPropertiesPanelModule, BpmnPropertiesProviderModule } from 'bpmn-js-properties-panel'
+import { CamundaPlatformPropertiesProviderModule } from 'bpmn-js-properties-panel'
+import CamundaBpmnModdle from 'camunda-bpmn-moddle/resources/camunda'
 import { deploymentApi, processApi } from '../api/client'
 
 const defaultDiagram = `<?xml version="1.0" encoding="UTF-8"?>
@@ -64,11 +68,22 @@ export default function BpmnModeler() {
     useEffect(() => {
         if (!containerRef.current) return
 
-        // Create modular instance
+        // Create modular instance with Properties Panel
         const modeler = new BpmnJS({
             container: containerRef.current,
+            propertiesPanel: {
+                parent: '#js-properties-panel'
+            },
+            additionalModules: [
+                BpmnPropertiesPanelModule,
+                BpmnPropertiesProviderModule,
+                CamundaPlatformPropertiesProviderModule // Enables formKey and other Camunda properties
+            ],
+            moddleExtensions: {
+                camunda: CamundaBpmnModdle
+            },
             keyboard: { bindTo: window },
-        })
+        } as any)
 
         modelerRef.current = modeler
         let isCancelled = false
@@ -137,8 +152,6 @@ export default function BpmnModeler() {
         }
     }, [id])
 
-
-
     const handleNameChange = (newName: string) => {
         setProcessName(newName)
         // If creating a new process (no ID param), auto-generate key
@@ -159,7 +172,6 @@ export default function BpmnModeler() {
             const match = xml.match(/<bpmn:process id="([^"]+)"/)
             const oldId = match ? match[1] : null
             if (oldId && oldId !== processId) {
-                // Safe string replacement for unique ID
                 // Safe string replacement for unique ID
                 xml = xml.split(oldId).join(processId)
             }
@@ -340,7 +352,10 @@ export default function BpmnModeler() {
             </div>
 
             {/* Modeler Container */}
-            <div ref={containerRef} className="flex-1 bpmn-container" />
+            <div className="flex-1 flex overflow-hidden">
+                <div ref={containerRef} className="flex-1 bpmn-container" />
+                <div id="js-properties-panel" className="w-[300px] border-l border-slate-700 bg-slate-50 overflow-y-auto" />
+            </div>
         </div>
     )
 }
