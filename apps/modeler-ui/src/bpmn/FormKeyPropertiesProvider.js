@@ -3,7 +3,7 @@
  * Adapted to be compatible with bpmn-js-properties-panel@5.x
  */
 
-export default function FormKeyPropertiesProvider(
+function FormKeyPropertiesProvider(
   propertiesPanel,
   translate,
   modeling,
@@ -39,7 +39,12 @@ FormKeyPropertiesProvider.$inject = [
 FormKeyPropertiesProvider.prototype._fetchForms = function () {
   const self = this;
 
-  fetch('http://localhost:8084/api/v1/forms?size=100')
+  // Use relative URL or ensure CORS is handled
+  const API_URL = 'http://localhost:8084/api/v1/forms?size=100';
+
+  console.log('[FormKeyPropertiesProvider] Fetching forms from', API_URL);
+
+  fetch(API_URL)
     .then(response => {
       if (!response.ok) {
         throw new Error('Failed to fetch forms: ' + response.statusText);
@@ -107,7 +112,6 @@ FormKeyPropertiesProvider.prototype.getGroups = function (element) {
       html: function (element, node) {
         const currentFormKey = element.businessObject.get('camunda:formKey') || '';
 
-        // Simple and robust HTML structure
         let html = '<div class="bio-properties-panel-entry bio-properties-panel-select">';
         html += '<label class="bio-properties-panel-label" for="custom-form-key-select">Available Forms</label>';
         html += '<div class="bio-properties-panel-field-wrapper">';
@@ -134,7 +138,7 @@ FormKeyPropertiesProvider.prototype.getGroups = function (element) {
         }
         html += '</div>';
 
-        // Attach listener logic (naive approach for legacy providers)
+        // Attach listener
         setTimeout(() => {
           const select = node.querySelector('#custom-form-key-select');
           if (select && !select._bound) {
@@ -148,7 +152,6 @@ FormKeyPropertiesProvider.prototype.getGroups = function (element) {
           }
         }, 0);
 
-        // Return HTML string as per legacy API
         return html;
       }
     });
@@ -170,3 +173,9 @@ function escapeHtml(text) {
   };
   return String(text).replace(/[&<>"']/g, function (m) { return map[m]; });
 }
+
+// Export as a module definition for bpmn-js
+export default {
+  __init__: ['formKeyPropertiesProvider'],
+  formKeyPropertiesProvider: ['type', FormKeyPropertiesProvider]
+};

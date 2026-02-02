@@ -1,7 +1,10 @@
 /**
- * Type declaration for FormKeyPropertiesProvider
+ * Type declaration for FormKeyPropertiesProvider module
  */
 declare module '../bpmn/FormKeyPropertiesProvider' {
-    const FormKeyPropertiesProvider: any
-    export default FormKeyPropertiesProvider
+    const FormKeyPropertiesProviderModule: {
+        __init__: string[];
+        formKeyPropertiesProvider: (string | any)[];
+    }
+    export default FormKeyPropertiesProviderModule
 }
