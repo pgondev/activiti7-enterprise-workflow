@@ -1,16 +1,15 @@
 /**
- * Custom properties provider for BPMN FormKey - Compatible with bpmn-js-properties-panel@5.x
- * This provider adds a form selector dropdown to replace the default formKey text input
+ * Custom properties provider for BPMN FormKey
+ * Adapted to be compatible with bpmn-js-properties-panel@5.x
  */
 
-// Note: This uses the older properties-panel API for version 5.x
 export default function FormKeyPropertiesProvider(
   propertiesPanel,
   translate,
   modeling,
   elementRegistry
 ) {
-  // Register provider with lower priority so it runs after default providers
+  // Register provider with lower priority
   propertiesPanel.registerProvider(600, this);
 
   this._translate = translate;
@@ -20,6 +19,8 @@ export default function FormKeyPropertiesProvider(
   // Store forms list
   this._forms = [];
   this._loading = true;
+
+  console.log('[FormKeyPropertiesProvider] Initializing...');
 
   // Fetch forms from API
   this._fetchForms();
@@ -41,7 +42,7 @@ FormKeyPropertiesProvider.prototype._fetchForms = function () {
   fetch('http://localhost:8084/api/v1/forms?size=100')
     .then(response => {
       if (!response.ok) {
-        throw new Error('Failed to fetch forms');
+        throw new Error('Failed to fetch forms: ' + response.statusText);
       }
       return response.json();
     })
@@ -58,7 +59,7 @@ FormKeyPropertiesProvider.prototype._fetchForms = function () {
 };
 
 /**
- * Get property tabs - not used in this version, but required by interface
+ * Get property parameters
  */
 FormKeyPropertiesProvider.prototype.getTabs = function (element) {
   return function (tabs) {
@@ -67,81 +68,77 @@ FormKeyPropertiesProvider.prototype.getTabs = function (element) {
 };
 
 /**
- * Get property groups - this is where we add our custom form selector
+ * Get property groups
  */
 FormKeyPropertiesProvider.prototype.getGroups = function (element) {
   const self = this;
 
   return function (groups) {
-    // Only add for user tasks and start events
-    if (!isUserTask(element) && !isStartEvent(element)) {
+    // Only for User Tasks
+    if (element.type !== 'bpmn:UserTask') {
       return groups;
     }
 
-    // Find the forms group
-    let formsGroupIndex = -1;
-    for (let i = 0; i < groups.length; i++) {
-      if (groups[i].id === 'forms' || groups[i].id === 'CamundaPlatform__Forms') {
-        formsGroupIndex = i;
-        break;
-      }
-    }
+    console.log('[FormKeyPropertiesProvider] Creating group for', element.id);
 
-    if (formsGroupIndex !== -1) {
-      // Modify existing forms group to add our dropdown
-      const formsGroup = groups[formsGroupIndex];
+    // Create a NEW group specifically for our dropdown to avoid conflicts
+    const customGroup = {
+      id: 'custom-form-key-group',
+      label: self._translate('Custom Form Selection'),
+      entries: []
+    };
 
-      // Add custom form selector entry at the beginning
-      formsGroup.entries.unshift({
-        id: 'form-key-selector',
-        label: self._translate('Form Key (Dropdown)'),
-        modelProperty: 'camunda:formKey',
-        get: function (element) {
-          const bo = element.businessObject;
-          return {
-            formKey: bo.get('camunda:formKey') || ''
-          };
-        },
-        set: function (element, values) {
-          return self._modeling.updateProperties(element, {
-            'camunda:formKey': values.formKey || undefined
+    // Add dropdown entry
+    customGroup.entries.push({
+      id: 'custom-form-key-selector',
+      label: self._translate('Select Form'),
+      modelProperty: 'camunda:formKey',
+      get: function (element) {
+        const bo = element.businessObject;
+        return {
+          formKey: bo.get('camunda:formKey') || ''
+        };
+      },
+      set: function (element, values) {
+        return self._modeling.updateProperties(element, {
+          'camunda:formKey': values.formKey || undefined
+        });
+      },
+      html: function (element, node) {
+        const currentFormKey = element.businessObject.get('camunda:formKey') || '';
+
+        // Simple and robust HTML structure
+        let html = '<div class="bio-properties-panel-entry bio-properties-panel-select">';
+        html += '<label class="bio-properties-panel-label" for="custom-form-key-select">Available Forms</label>';
+        html += '<div class="bio-properties-panel-field-wrapper">';
+        html += '<select id="custom-form-key-select" name="formKey" class="bio-properties-panel-input">';
+        html += '<option value="">-- Choose a Form --</option>';
+
+        if (self._loading) {
+          html += '<option disabled>Loading forms...</option>';
+        } else if (self._forms.length === 0) {
+          html += '<option disabled>No forms available (API)</option>';
+        } else {
+          self._forms.forEach(function (form) {
+            const selected = form.key === currentFormKey ? ' selected' : '';
+            html += '<option value="' + escapeHtml(form.key) + '"' + selected + '>';
+            html += escapeHtml(form.name) + '</option>';
           });
-        },
-        html: function (element, node) {
-          // Create dropdown HTML
-          const currentFormKey = element.businessObject.get('camunda:formKey') || '';
+        }
 
-          let html = '<div class="bpp-field-wrapper">';
-          html += '<label for="camunda-form-key-select">Select Form</label>';
-          html += '<select id="camunda-form-key-select" name="formKey" data-entry="form-key-selector">';
-          html += '<option value="">-- Select Form --</option>';
+        html += '</select>';
+        html += '</div>';
 
-          if (self._loading) {
-            html += '<option disabled>Loading forms...</option>';
-          } else if (self._forms.length === 0) {
-            html += '<option disabled>No forms available</option>';
-          } else {
-            self._forms.forEach(function (form) {
-              const selected = form.key === currentFormKey ? ' selected' : '';
-              html += '<option value="' + escapeHtml(form.key) + '"' + selected + '>';
-              html += escapeHtml(form.name) + ' (' + escapeHtml(form.key) + ')';
-              html += '</option>';
-            });
-          }
+        if (currentFormKey) {
+          html += '<div class="bio-properties-panel-description">Current Key: <code>' + escapeHtml(currentFormKey) + '</code></div>';
+        }
+        html += '</div>';
 
-          html += '</select>';
-
-          if (currentFormKey) {
-            html += '<div style="margin-top:4px;color:#4caf50;font-size:12px;">✓ Form assigned: ' + escapeHtml(currentFormKey) + '</div>';
-          }
-
-          html += '</div>';
-
-          node.innerHTML = html;
-
-          // Attach change event listener
-          const select = node.querySelector('#camunda-form-key-select');
-          if (select) {
+        // Attach listener logic (naive approach for legacy providers)
+        setTimeout(() => {
+          const select = node.querySelector('#custom-form-key-select');
+          if (select && !select._bound) {
+            select._bound = true;
             select.addEventListener('change', function (e) {
               const newValue = e.target.value;
               self._modeling.updateProperties(element, {
@@ -149,24 +146,19 @@ FormKeyPropertiesProvider.prototype.getGroups = function (element) {
               });
             });
           }
+        }, 0);
 
-          return node;
-        }
-      });
-    }
+        // Return HTML string as per legacy API
+        return html;
+      }
+    });
+
+    // Add our group to the top
+    groups.unshift(customGroup);
 
     return groups;
   };
 };
-
-// Helper functions
-function isUserTask(element) {
-  return element.type === 'bpmn:UserTask';
-}
-
-function isStartEvent(element) {
-  return element.type === 'bpmn:StartEvent';
-}
 
 function escapeHtml(text) {
   const map = {
