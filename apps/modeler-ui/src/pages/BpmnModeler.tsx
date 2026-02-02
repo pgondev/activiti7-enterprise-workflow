@@ -9,6 +9,7 @@ import '@bpmn-io/properties-panel/dist/assets/properties-panel.css'
 import { BpmnPropertiesPanelModule, BpmnPropertiesProviderModule } from 'bpmn-js-properties-panel'
 import { CamundaPlatformPropertiesProviderModule } from 'bpmn-js-properties-panel'
 import CamundaBpmnModdle from 'camunda-bpmn-moddle/resources/camunda'
+import FormKeyPropertiesProvider from '../bpmn/FormKeyPropertiesProvider'
 import { deploymentApi, processApi } from '../api/client'
 
 const defaultDiagram = `<?xml version="1.0" encoding="UTF-8"?>
@@ -77,7 +78,8 @@ export default function BpmnModeler() {
             additionalModules: [
                 BpmnPropertiesPanelModule,
                 BpmnPropertiesProviderModule,
-                CamundaPlatformPropertiesProviderModule // Enables formKey and other Camunda properties
+                CamundaPlatformPropertiesProviderModule, // Enables formKey and other Camunda properties
+                FormKeyPropertiesProvider // Custom form selector dropdown
             ],
             moddleExtensions: {
                 camunda: CamundaBpmnModdle
