@@ -7,22 +7,19 @@ import { SelectEntry } from '@bpmn-io/properties-panel';
 import { useService } from 'bpmn-js-properties-panel';
 import { useEffect, useState } from 'preact/hooks';
 
-// Provider Class
-class FormKeyPropertiesProvider {
-  constructor(propertiesPanel, translate) {
-    this._translate = translate;
+// Module definition
+export default {
+  __init__: ['formKeyPropertiesProvider'],
+  formKeyPropertiesProvider: ['type', FormKeyPropertiesProvider]
+};
 
-    // Register provider
-    propertiesPanel.registerProvider(500, this);
-  }
+// Provider Constructor
+function FormKeyPropertiesProvider(propertiesPanel, translate) {
+  this._translate = translate;
 
-  /**
-   * Return the groups function for the given element
-   * @param {ModdleElement} element
-   * @return {(groups: any[]) => any[]}
-   */
-  getGroups(element) {
-    return (groups) => {
+  // Define getGroups functionality
+  this.getGroups = function (element) {
+    return function (groups) {
       // Only add to User Tasks
       if (element.type !== 'bpmn:UserTask') {
         return groups;
@@ -31,12 +28,12 @@ class FormKeyPropertiesProvider {
       // Add custom group at the top
       groups.unshift({
         id: 'custom-form-key-group',
-        label: this._translate('Custom Form Selection'),
+        label: translate('Custom Form Selection'),
         entries: [
           {
             id: 'form-key-select',
             element,
-            component: FormProps, // Component handling the logic
+            component: FormProps, // Preact Component
             isEdited: () => false
           }
         ]
@@ -44,7 +41,10 @@ class FormKeyPropertiesProvider {
 
       return groups;
     };
-  }
+  };
+
+  // Register provider AFTER defining methods to ensure API compliance
+  propertiesPanel.registerProvider(500, this);
 }
 
 FormKeyPropertiesProvider.$inject = ['propertiesPanel', 'translate'];
@@ -59,7 +59,7 @@ function FormProps(props) {
 
   // State
   const [options, setOptions] = useState([
-    { value: '', label: translate('Loading...') }
+    { value: '', label: translate('Loading forms...') }
   ]);
 
   // Fetch Forms
@@ -117,9 +117,3 @@ function FormProps(props) {
     debounce
   });
 }
-
-// Module Definition
-export default {
-  __init__: ['formKeyPropertiesProvider'],
-  formKeyPropertiesProvider: ['type', FormKeyPropertiesProvider]
-};
