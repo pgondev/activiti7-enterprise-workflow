@@ -1,180 +1,149 @@
 /**
  * Custom properties provider for BPMN FormKey
- * Adapted to be compatible with bpmn-js-properties-panel@5.x
+ * Uses Preact components for bpmn-js-properties-panel@5.x compatibility
  */
 
-function FormKeyPropertiesProvider(
-  propertiesPanel,
-  translate,
-  modeling,
-  elementRegistry
-) {
-  // Register provider with lower priority
-  propertiesPanel.registerProvider(600, this);
+import { html } from 'htm/preact';
+import { useState, useEffect } from 'preact/hooks';
 
+// Constructor
+function FormKeyPropertiesProvider(propertiesPanel, injector, translate) {
+  this._injector = injector;
   this._translate = translate;
-  this._modeling = modeling;
-  this._elementRegistry = elementRegistry;
 
-  // Store forms list
-  this._forms = [];
-  this._loading = true;
-
-  console.log('[FormKeyPropertiesProvider] Initializing...');
-
-  // Fetch forms from API
-  this._fetchForms();
+  // Register provider
+  propertiesPanel.registerProvider(600, this);
 }
 
 FormKeyPropertiesProvider.$inject = [
   'propertiesPanel',
-  'translate',
-  'modeling',
-  'elementRegistry'
+  'injector',
+  'translate'
 ];
 
-/**
- * Fetch available forms from form-service API
- */
-FormKeyPropertiesProvider.prototype._fetchForms = function () {
-  const self = this;
-
-  // Use relative URL or ensure CORS is handled
-  const API_URL = 'http://localhost:8084/api/v1/forms?size=100';
-
-  console.log('[FormKeyPropertiesProvider] Fetching forms from', API_URL);
-
-  fetch(API_URL)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to fetch forms: ' + response.statusText);
-      }
-      return response.json();
-    })
-    .then(data => {
-      self._forms = data.content || data || [];
-      self._loading = false;
-      console.log('[FormKeyPropertiesProvider] Loaded ' + self._forms.length + ' forms');
-    })
-    .catch(error => {
-      console.error('[FormKeyPropertiesProvider] Error fetching forms:', error);
-      self._forms = [];
-      self._loading = false;
-    });
-};
-
-/**
- * Get property parameters
- */
-FormKeyPropertiesProvider.prototype.getTabs = function (element) {
-  return function (tabs) {
-    return tabs;
-  };
-};
-
-/**
- * Get property groups
- */
+// Group definition
 FormKeyPropertiesProvider.prototype.getGroups = function (element) {
-  const self = this;
-
-  return function (groups) {
+  return (groups) => {
     // Only for User Tasks
     if (element.type !== 'bpmn:UserTask') {
       return groups;
     }
 
-    console.log('[FormKeyPropertiesProvider] Creating group for', element.id);
-
-    // Create a NEW group specifically for our dropdown to avoid conflicts
-    const customGroup = {
+    // Add Custom Group
+    groups.unshift({
       id: 'custom-form-key-group',
-      label: self._translate('Custom Form Selection'),
-      entries: []
-    };
-
-    // Add dropdown entry
-    customGroup.entries.push({
-      id: 'custom-form-key-selector',
-      label: self._translate('Select Form'),
-      modelProperty: 'camunda:formKey',
-      get: function (element) {
-        const bo = element.businessObject;
-        return {
-          formKey: bo.get('camunda:formKey') || ''
-        };
-      },
-      set: function (element, values) {
-        return self._modeling.updateProperties(element, {
-          'camunda:formKey': values.formKey || undefined
-        });
-      },
-      html: function (element, node) {
-        const currentFormKey = element.businessObject.get('camunda:formKey') || '';
-
-        let html = '<div class="bio-properties-panel-entry bio-properties-panel-select">';
-        html += '<label class="bio-properties-panel-label" for="custom-form-key-select">Available Forms</label>';
-        html += '<div class="bio-properties-panel-field-wrapper">';
-        html += '<select id="custom-form-key-select" name="formKey" class="bio-properties-panel-input">';
-        html += '<option value="">-- Choose a Form --</option>';
-
-        if (self._loading) {
-          html += '<option disabled>Loading forms...</option>';
-        } else if (self._forms.length === 0) {
-          html += '<option disabled>No forms available (API)</option>';
-        } else {
-          self._forms.forEach(function (form) {
-            const selected = form.key === currentFormKey ? ' selected' : '';
-            html += '<option value="' + escapeHtml(form.key) + '"' + selected + '>';
-            html += escapeHtml(form.name) + '</option>';
-          });
+      label: this._translate('Custom Form Selection'),
+      entries: [
+        {
+          id: 'custom-form-key-selector',
+          element,
+          component: FormKeySelector, // Use Preact component
+          isEdited: () => false
         }
-
-        html += '</select>';
-        html += '</div>';
-
-        if (currentFormKey) {
-          html += '<div class="bio-properties-panel-description">Current Key: <code>' + escapeHtml(currentFormKey) + '</code></div>';
-        }
-        html += '</div>';
-
-        // Attach listener
-        setTimeout(() => {
-          const select = node.querySelector('#custom-form-key-select');
-          if (select && !select._bound) {
-            select._bound = true;
-            select.addEventListener('change', function (e) {
-              const newValue = e.target.value;
-              self._modeling.updateProperties(element, {
-                'camunda:formKey': newValue || undefined
-              });
-            });
-          }
-        }, 0);
-
-        return html;
-      }
+      ]
     });
-
-    // Add our group to the top
-    groups.unshift(customGroup);
 
     return groups;
   };
 };
 
-function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
+// Top-level Preact Component
+function FormKeySelector(props) {
+  const { element, injector } = props;
+  const modeling = injector.get('modeling');
+  const [forms, setForms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Get current value
+  const businessObject = element.businessObject;
+  const currentFormKey = businessObject.get('camunda:formKey') || '';
+
+  // Fetch Forms Effect
+  useEffect(() => {
+    const API_URL = 'http://localhost:8084/api/v1/forms?size=100';
+    console.log('[FormKeySelector] Fetching forms from', API_URL);
+
+    fetch(API_URL)
+      .then(res => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      })
+      .then(data => {
+        const list = data.content || data || [];
+        setForms(list);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('[FormKeySelector] Error:', err);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  // Handle Change
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    modeling.updateProperties(element, {
+      'camunda:formKey': newValue || undefined
+    });
   };
-  return String(text).replace(/[&<>"']/g, function (m) { return map[m]; });
+
+  // Render Loading
+  if (loading) {
+    return html`
+      <div class="bio-properties-panel-entry">
+        <label class="bio-properties-panel-label">Form Key</label>
+        <div class="bio-properties-panel-field-wrapper">
+          <div class="bio-properties-panel-input" style="color: #666; padding: 5px;">Loading forms...</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Render Error
+  if (error) {
+    return html`
+      <div class="bio-properties-panel-entry">
+        <label class="bio-properties-panel-label">Form Key (Error)</label>
+        <div class="bio-properties-panel-field-wrapper">
+          <div style="color: red; font-size: 12px;">Failed to load: ${error}</div>
+          <input 
+            class="bio-properties-panel-input"
+            value=${currentFormKey}
+            onInput=${handleChange}
+            placeholder="Type key manually"
+          />
+        </div>
+      </div>
+    `;
+  }
+
+  // Render Dropdown
+  return html`
+    <div class="bio-properties-panel-entry">
+      <label class="bio-properties-panel-label">
+        Select Form
+        ${currentFormKey && html`<span style="margin-left: 5px; color: green; font-weight: bold;">✓</span>`}
+      </label>
+      <div class="bio-properties-panel-field-wrapper">
+        <select class="bio-properties-panel-input" onChange=${handleChange} value=${currentFormKey}>
+          <option value="">-- Choose a Form --</option>
+          ${forms.map(form => html`
+            <option value=${form.key}>${form.name} (${form.key})</option>
+          `)}
+        </select>
+      </div>
+       ${currentFormKey && html`
+        <div class="bio-properties-panel-description">
+          Current Key: <code>${currentFormKey}</code>
+        </div>
+      `}
+    </div>
+  `;
 }
 
-// Export as a module definition for bpmn-js
+// Export as Module Definition (Critical Fix)
 export default {
   __init__: ['formKeyPropertiesProvider'],
   formKeyPropertiesProvider: ['type', FormKeyPropertiesProvider]
