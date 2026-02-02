@@ -7,6 +7,8 @@ import { SelectEntry } from '@bpmn-io/properties-panel';
 import { useService } from 'bpmn-js-properties-panel';
 import { useEffect, useState } from 'preact/hooks';
 
+console.log('[FormKeyPropertiesProvider] Module Loaded (File Evaluated)');
+
 // Module definition
 export default {
   __init__: ['formKeyPropertiesProvider'],
@@ -15,15 +17,22 @@ export default {
 
 // Provider Constructor
 function FormKeyPropertiesProvider(propertiesPanel, translate) {
+  console.log('[FormKey] Constructor called. Registering provider...');
+
   this._translate = translate;
 
   // Define getGroups functionality
   this.getGroups = function (element) {
     return function (groups) {
+      // Trace log
+      console.log('[FormKey] getGroups called for:', element.type, element.id);
+
       // Only add to User Tasks
       if (element.type !== 'bpmn:UserTask') {
         return groups;
       }
+
+      console.log('[FormKey] Adding custom group for User Task');
 
       // Add custom group at the top
       groups.unshift({
@@ -43,8 +52,9 @@ function FormKeyPropertiesProvider(propertiesPanel, translate) {
     };
   };
 
-  // Register provider AFTER defining methods to ensure API compliance
+  // Register provider
   propertiesPanel.registerProvider(500, this);
+  console.log('[FormKey] Provider registered.');
 }
 
 FormKeyPropertiesProvider.$inject = ['propertiesPanel', 'translate'];
@@ -52,6 +62,7 @@ FormKeyPropertiesProvider.$inject = ['propertiesPanel', 'translate'];
 // Preact Component for the Entry
 function FormProps(props) {
   const { element, id } = props;
+  console.log('[FormKey] FormProps rendering...');
 
   const modeling = useService('modeling');
   const translate = useService('translate');
